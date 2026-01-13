@@ -16,9 +16,12 @@ const app = express();
 // --- CONFIGURACIÓN DE CORS INTELIGENTE ---
 // Lista de orígenes permitidos (Tu PC y tu futuro dominio)
 const allowedOrigins = [
-  "http://localhost:5173",          // Desarrollo local
-  process.env.FRONTEND_URL,         // Producción (Netlify/Vlyck.cl)
-  "https://vlyck-store.netlify.app" // (Opcional) Puedes dejarlo fijo por seguridad extra
+  "http://localhost:5173",          // Tu PC
+  "http://localhost:5000",          // Postman / Local
+  "https://vlyck.cl",               // Tu Dominio Final (Sin www)
+  "https://www.vlyck.cl",           // Tu Dominio Final (Con www)
+  "https://vlyck-front.netlify.app", // <--- 🔴 LA QUE FALTABA (Tu Netlify actual)
+  process.env.FRONTEND_URL          // La variable de Railway
 ];
 
 app.use(cors({
