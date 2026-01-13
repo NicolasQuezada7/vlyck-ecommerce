@@ -38,7 +38,7 @@ export default function RegisterPage() {
         setLoading(true);
         try {
             // 1. Petición al Backend
-            const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/users`, { name, email, password });
+            const { data } = await axios.post(`/api/users`, { name, email, password });
 
             // 2. Si es exitoso, logueamos automáticamente en el contexto
             login(data);

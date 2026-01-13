@@ -34,7 +34,7 @@ export default function ProductListPage() {
 
   const fetchProducts = async () => {
     try {
-      const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/products`);
+      const { data } = await axios.get(`/api/products`);
       setProducts(data);
       setLoading(false);
     } catch (err) {
@@ -48,7 +48,7 @@ export default function ProductListPage() {
       setLoadingDelete(true);
       try {
         const config = { headers: { Authorization: `Bearer ${userInfo.token}` } };
-        await axios.delete(`${import.meta.env.VITE_API_URL}/products/${id}`, config);
+        await axios.delete(`/api/products/${id}`, config);
         fetchProducts();
         setLoadingDelete(false);
       } catch (error) {
@@ -62,7 +62,7 @@ export default function ProductListPage() {
     setLoadingCreate(true);
     try {
       const config = { headers: { Authorization: `Bearer ${userInfo.token}` } };
-      const { data: createdProduct } = await axios.post(`${import.meta.env.VITE_API_URL}/products`, {}, config);
+      const { data: createdProduct } = await axios.post(`/api/products`, {}, config);
       navigate(`/admin/product/${createdProduct._id}/edit`);
     } catch (error) {
       console.error(error);

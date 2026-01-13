@@ -10,7 +10,7 @@ export default function HomePage() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/products`);
+        const { data } = await axios.get(`/api/products`);
         setProducts(data);
         setLoading(false);
       } catch (error) {

@@ -38,7 +38,7 @@ export default function ProductEditPage() {
     const fetchProduct = async () => {
       try {
         const config = { headers: { Authorization: `Bearer ${userInfo.token}` } };
-        const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/products/id/${productId}`, config);
+        const { data } = await axios.get(`/api/products/id/${productId}`, config);
 
         setName(data.name);
         setSlug(data.slug);
@@ -84,7 +84,7 @@ export default function ProductEditPage() {
 
     try {
       const config = { headers: { 'Content-Type': 'multipart/form-data' } };
-      const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/upload`, formData, config);
+      const { data } = await axios.post(`/api/upload`, formData, config);
 
       if (isVariant) {
         setNewColorImages(prev => [...prev, data]);
@@ -141,7 +141,7 @@ export default function ProductEditPage() {
     try {
       const config = { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${userInfo.token}` } };
       await axios.put(
-        `${import.meta.env.VITE_API_URL}/products/${productId}`,
+        `/api/products/${productId}`,
         {
           name, slug, basePrice: price, images, brand, category, description,
           variants,

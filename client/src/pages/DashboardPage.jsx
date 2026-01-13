@@ -23,11 +23,11 @@ export default function DashboardPage() {
         };
 
         // 1. Traer Órdenes
-        const { data: ordersData } = await axios.get(`${import.meta.env.VITE_API_URL}/orders`, config);
+        const { data: ordersData } = await axios.get(`/api/orders`, config);
         setOrders(ordersData);
 
         // 2. Traer Productos (para contar cuántos hay)
-        const { data: productsData } = await axios.get(`${import.meta.env.VITE_API_URL}/products`);
+        const { data: productsData } = await axios.get(`/api/products`);
         setProductsCount(productsData.length);
 
         setLoading(false);

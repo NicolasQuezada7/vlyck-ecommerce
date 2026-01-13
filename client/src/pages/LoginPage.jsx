@@ -36,7 +36,7 @@ export default function LoginPage() {
 
     try {
       // 1. HACEMOS LA PETICIÓN AL BACKEND
-      const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/users/login`, {
+      const { data } = await axios.post(`/api/users/login`, {
         email,
         password,
       });

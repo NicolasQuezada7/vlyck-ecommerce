@@ -26,7 +26,7 @@ export default function MercadoPagoButton({ cartItems }) {
 
       // Petición al Backend
       const { data } = await axios.post(
-        `${import.meta.env.VITE_API_URL}/payment/create-order`,
+        `/api/payment/create-order`,
         { orderItems: cartItems },
         config
       );

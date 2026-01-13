@@ -22,7 +22,7 @@ export default function ProductPage() {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/products/${slug}`);
+        const { data } = await axios.get(`/api/products/${slug}`);
         setProduct(data);
 
         let preSelected = null;

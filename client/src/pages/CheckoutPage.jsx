@@ -65,7 +65,7 @@ const handleSubmit = async (e) => {
       };
 
       // 2. Enviamos al backend
-      const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/orders`, orderData);
+      const { data } = await axios.post(`/api/orders`, orderData);
       
       console.log("Orden Creada:", data);
       

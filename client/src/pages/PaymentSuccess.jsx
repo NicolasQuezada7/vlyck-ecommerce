@@ -75,7 +75,7 @@ export default function PaymentSuccess() {
 
           // 4. ENVIAR AL BACKEND
           const { data } = await axios.post(
-            `${import.meta.env.VITE_API_URL}/orders`,
+            `/api/orders`,
             orderData,
             config
           );

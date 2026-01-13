@@ -17,7 +17,7 @@ export default function CatalogPage() {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/products`);
+        const { data } = await axios.get(`/api/products`);
         setOriginalProducts(data.reverse());
         setLoading(false);
       } catch (error) { setLoading(false); }

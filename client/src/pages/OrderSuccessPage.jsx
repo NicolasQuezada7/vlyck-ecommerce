@@ -10,7 +10,7 @@ export default function OrderSuccessPage() {
   useEffect(() => {
     const fetchOrder = async () => {
       try {
-        const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/orders/${id}`);
+        const { data } = await axios.get(`/api/orders/${id}`);
         setOrder(data);
         setLoading(false);
       } catch (error) {
