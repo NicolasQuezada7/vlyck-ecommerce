@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+  background-color: #050505; /* background-dark */
+  color: white;
+}
+
+/* Ocultar Scrollbar pero permitir scroll */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* EFECTO DE BORDE GRADIENTE (La magia de las tarjetas) */
+.gradient-border-mask {
+    position: relative;
+    background: #111111;
+    background-clip: padding-box;
+    border: 2px solid transparent;
+    border-radius: 1rem;
+}
+
+/* El borde brilla al pasar el mouse */
+.group:hover .gradient-border-mask::before {
+    opacity: 1;
+}
+
+.gradient-border-mask::before {
+    content: "";
+    position: absolute;
+    top: 0; right: 0; bottom: 0; left: 0;
+    z-index: -1;
+    margin: -2px;
+    border-radius: inherit;
+    background: linear-gradient(to right, #A7FF2D, #2DFFFF);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
