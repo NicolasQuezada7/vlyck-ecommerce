@@ -104,27 +104,47 @@ export default function ProductEditPage() {
   };
 
   // --- GESTIÓN DE VARIANTES ---
+ // --- GESTIÓN DE VARIANTES (CORREGIDA) ---
   const addVariant = () => {
     if (!newColor) return alert("Selecciona o escribe un color");
 
-    // Limpiamos espacios y estandarizamos
+    // Limpiamos espacios
     const colorClean = newColor.trim();
+    const stockToAdd = parseInt(newColorStock) || 0;
 
     // Verificamos si existe (ignorando mayúsculas/minúsculas)
     const exists = variants.find(v => v.color.toLowerCase() === colorClean.toLowerCase());
 
+    let updatedVariants;
+
     if (exists) {
-      return alert(`El color "${colorClean}" ya existe en la lista. Bórralo primero si quieres editarlo.`);
+      // ✅ CASO 1: EL COLOR YA EXISTE -> ACTUALIZAMOS (SUMAR STOCK Y FOTOS)
+      updatedVariants = variants.map(v => {
+        if (v.color.toLowerCase() === colorClean.toLowerCase()) {
+          return {
+            ...v,
+            // Sumamos el stock nuevo al que ya tenía
+            stock: parseInt(v.stock) + stockToAdd, 
+            // Combinamos las fotos que ya tenía con las nuevas (si subiste más)
+            images: [...v.images, ...newColorImages] 
+          };
+        }
+        return v;
+      });
+      // (Opcional) Feedback visual
+      // alert(`Se actualizó el color ${colorClean}: Stock sumado.`);
+    } else {
+      // ✅ CASO 2: NO EXISTE -> CREAMOS UNO NUEVO
+      updatedVariants = [...variants, {
+        color: colorClean,
+        stock: stockToAdd,
+        images: newColorImages
+      }];
     }
 
-    const updatedVariants = [...variants, {
-      color: colorClean, // Usamos el nombre limpio
-      stock: parseInt(newColorStock),
-      images: newColorImages
-    }];
     setVariants(updatedVariants);
 
-    // Resetear inputs
+    // Resetear inputs para seguir agregando
     setNewColor('');
     setNewColorStock(0);
     setNewColorImages([]);
