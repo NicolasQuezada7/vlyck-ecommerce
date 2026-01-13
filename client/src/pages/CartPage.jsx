@@ -1,8 +1,13 @@
+import { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
-import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import MercadoPagoButton from '../components/MercadoPagoButton';
 
 export default function CartPage() {
   const { cart, removeFromCart, updateQuantity, totalPrice, totalItems } = useCart();
+  const { userInfo } = useAuth(); // Obtenemos el usuario
+  const navigate = useNavigate(); // Para redirigir
 
   // Si el carrito está vacío, mostramos mensaje y botón volver
   if (cart.length === 0) {
@@ -24,7 +29,7 @@ export default function CartPage() {
   }
 
   return (
-    <div className="bg-background-dark text-white font-sans antialiased min-h-screen flex flex-col pt-24"> {/* pt-24 para compensar navbar fijo */}
+    <div className="bg-background-dark text-white font-sans antialiased min-h-screen flex flex-col pt-24">
       
       <main className="flex-grow w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-12 py-8">
         
@@ -60,11 +65,11 @@ export default function CartPage() {
                   
                   {/* IMAGEN */}
                   <div className="w-full sm:w-28 h-28 bg-[#151515] rounded-xl overflow-hidden flex-shrink-0 border border-white/5 relative group-hover:border-primary/30 transition-colors flex items-center justify-center">
-                     {item.imageUrl ? (
-                       <img className="w-full h-full object-contain p-2" src={item.imageUrl} alt={item.name} />
-                     ) : (
-                       <span className="text-gray-600 text-xs">Sin img</span>
-                     )}
+                      {item.imageUrl ? (
+                        <img className="w-full h-full object-contain p-2" src={item.imageUrl} alt={item.name} />
+                      ) : (
+                        <span className="text-gray-600 text-xs">Sin img</span>
+                      )}
                   </div>
 
                   {/* INFO & CONTROLES */}
@@ -152,18 +157,22 @@ export default function CartPage() {
                 </button>
               </div>
 
-              {/* Checkout CTA */}
-           {/* Asegúrate de tener esto arriba: import { Link } from 'react-router-dom'; */}
-
-                <Link 
-                to="/checkout" 
-                className="w-full py-4 rounded-xl bg-vlyck-gradient text-black font-extrabold text-lg uppercase tracking-widest hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(45,255,255,0.3)] transition-all duration-300 relative overflow-hidden group flex items-center justify-center"
-                >
+              {/* --- ZONA DE PAGO / CHECKOUT --- */}
+              {userInfo ? (
+                 // SI ESTÁ LOGUEADO: Botón de Mercado Pago
+                 <MercadoPagoButton cartItems={cart} />
+              ) : (
+                 // SI NO ESTÁ LOGUEADO: Botón para ir al Login (Con tu estilo Vlyck)
+                 <button 
+                    onClick={() => navigate('/login')}
+                    className="w-full py-4 rounded-xl bg-vlyck-gradient text-black font-extrabold text-lg uppercase tracking-widest hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(45,255,255,0.3)] transition-all duration-300 relative overflow-hidden group flex items-center justify-center"
+                 >
                     <span className="relative z-10 flex items-center justify-center gap-2">
-                    Pagar Ahora <span className="material-symbols-outlined font-bold">arrow_forward</span>
+                      INICIA SESIÓN PARA PAGAR <span className="material-symbols-outlined font-bold">login</span>
                     </span>
                     <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
-                </Link>
+                 </button>
+              )}
 
               {/* Trust Badges */}
               <div className="flex justify-center items-center gap-6 mt-8 opacity-30 grayscale hover:grayscale-0 hover:opacity-70 transition-all duration-500">

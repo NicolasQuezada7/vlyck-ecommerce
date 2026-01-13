@@ -17,6 +17,8 @@ import DashboardPage from './pages/DashboardPage';
 import ProductListPage from './pages/ProductListPage';
 import ProductEditPage from './pages/ProductEditPage';
 import ProfilePage from './pages/ProfilePage'; // <--- IMPORTAR
+import PaymentSuccess from './pages/PaymentSuccess';
+import OrderSuccessPage from './pages/OrderSuccessPage';
 
 // Componente interno para manejar la lógica de inactividad
 function InactivityHandler() {
@@ -75,7 +77,10 @@ function App() {
               <Route path="/product/:slug" element={<ProductPage />} />
               <Route path="/cart" element={<CartPage />} />
               <Route path="/profile" element={<ProfilePage />} /> {/* <--- RUTA NUEVA */}
+              <Route path="/payment-success" element={<PaymentSuccess />} />
+             <Route path="/order/:id" element={<OrderSuccessPage />} />
 
+              {/* --- RUTAS DE AUTENTICACIÓN --- */}
               {/* Autenticación */}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} /> {/* <--- RUTA NUEVA */}
