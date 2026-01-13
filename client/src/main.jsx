@@ -9,7 +9,7 @@ import axios from 'axios' // <--- Asegúrate que axios esté importado
 // 🔴 CAMBIO IMPORTANTE: PEGA AQUÍ TU URL DE RAILWAY DIRECTA
 // (La que copiaste antes, tipo: https://vlyck-production.up.railway.app)
 // ¡SIN la barra "/" al final!
-axios.defaults.baseURL = 'https://TU-URL-DE-RAILWAY-AQUI.up.railway.app'; 
+axios.defaults.baseURL = 'https://vlyck-ecommerce.railway.internal'; 
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
