@@ -7,6 +7,16 @@ const userSchema = mongoose.Schema(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     isAdmin: { type: Boolean, required: true, default: false },
+
+    // --- 👇 NUEVO: CAMPOS PARA EL PERFIL ---
+    phone: { type: String },
+    shippingAddress: {
+      address: { type: String }, // Calle y número
+      city: { type: String },    // Ciudad
+      comuna: { type: String },  // Comuna
+      region: { type: String }   // Región (opcional)
+    }
+    // --------------------------------------
   },
   { timestamps: true }
 );

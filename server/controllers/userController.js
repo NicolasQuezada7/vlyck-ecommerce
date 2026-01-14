@@ -16,6 +16,9 @@ const authUser = asyncHandler(async (req, res) => {
       name: user.name,
       email: user.email,
       isAdmin: user.isAdmin,
+      // 👇 NUEVO: Retornamos datos de perfil al loguearse
+      phone: user.phone,
+      shippingAddress: user.shippingAddress,
       token: generateToken(user._id),
     });
   } else {
@@ -69,6 +72,9 @@ const getUserProfile = asyncHandler(async (req, res) => {
       name: user.name,
       email: user.email,
       isAdmin: user.isAdmin,
+      // 👇 NUEVO: Enviamos los datos guardados
+      phone: user.phone,
+      shippingAddress: user.shippingAddress,
     });
   } else {
     res.status(404);
@@ -88,6 +94,11 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     if (req.body.password) {
       user.password = req.body.password;
     }
+    
+    // 👇 NUEVO: Lógica para guardar dirección y teléfono
+    user.phone = req.body.phone || user.phone;
+    user.shippingAddress = req.body.shippingAddress || user.shippingAddress;
+    // ------------------------------------------------
 
     const updatedUser = await user.save();
 
@@ -96,6 +107,9 @@ const updateUserProfile = asyncHandler(async (req, res) => {
       name: updatedUser.name,
       email: updatedUser.email,
       isAdmin: updatedUser.isAdmin,
+      // 👇 NUEVO: Retornamos los datos actualizados al frontend
+      phone: updatedUser.phone,
+      shippingAddress: updatedUser.shippingAddress,
       token: generateToken(updatedUser._id),
     });
   } else {
@@ -149,7 +163,7 @@ const updateUser = asyncHandler(async (req, res) => {
   if (user) {
     user.name = req.body.name || user.name;
     user.email = req.body.email || user.email;
-    user.isAdmin = req.body.isAdmin !== undefined ? req.body.isAdmin : user.isAdmin; // Corrección para booleanos
+    user.isAdmin = req.body.isAdmin !== undefined ? req.body.isAdmin : user.isAdmin;
 
     const updatedUser = await user.save();
 
@@ -165,7 +179,6 @@ const updateUser = asyncHandler(async (req, res) => {
   }
 });
 
-// AQUÍ ESTÁ LA CLAVE: Exportar todas las funciones
 export {
   authUser,
   registerUser,

@@ -4,7 +4,7 @@ import axios from 'axios'; // Importante: Usaremos axios aquí
 import { useAuth } from '../context/AuthContext';
 
 // Importa el logo principal
-import logoImg from '../assets/logo.png';
+import logoImg from '../assets/logo2.png';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');

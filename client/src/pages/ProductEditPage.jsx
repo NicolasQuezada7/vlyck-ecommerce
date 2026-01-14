@@ -67,10 +67,27 @@ export default function ProductEditPage() {
     else navigate('/admin');
   }, [productId, userInfo, navigate]);
 
+  // ✅ CORRECCIÓN 1: SLUG ÚNICO AL ESCRIBIR NOMBRE
   const handleNameChange = (e) => {
     const val = e.target.value;
     setName(val);
-    const autoSlug = val.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+    
+    // TRUCO: Combinamos Nombre + Categoría para el Slug
+    const combined = `${val} ${category}`; 
+    const autoSlug = combined.toLowerCase().trim().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+    
+    setSlug(autoSlug);
+  };
+
+  // ✅ CORRECCIÓN 2: SLUG ÚNICO AL CAMBIAR CATEGORÍA
+  const handleCategoryChange = (e) => {
+    const newCategory = e.target.value;
+    setCategory(newCategory);
+
+    // Si cambiamos la categoría, actualizamos el slug también para evitar choques
+    const combined = `${name} ${newCategory}`;
+    const autoSlug = combined.toLowerCase().trim().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+    
     setSlug(autoSlug);
   };
 
@@ -103,8 +120,7 @@ export default function ProductEditPage() {
     else setImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  // --- GESTIÓN DE VARIANTES ---
- // --- GESTIÓN DE VARIANTES (CORREGIDA) ---
+  // ✅ CORRECCIÓN 3: FUSIÓN DE VARIANTES (MERGE)
   const addVariant = () => {
     if (!newColor) return alert("Selecciona o escribe un color");
 
@@ -118,23 +134,19 @@ export default function ProductEditPage() {
     let updatedVariants;
 
     if (exists) {
-      // ✅ CASO 1: EL COLOR YA EXISTE -> ACTUALIZAMOS (SUMAR STOCK Y FOTOS)
+      // CASO 1: EL COLOR YA EXISTE -> ACTUALIZAMOS (SUMAR STOCK Y FOTOS)
       updatedVariants = variants.map(v => {
         if (v.color.toLowerCase() === colorClean.toLowerCase()) {
           return {
             ...v,
-            // Sumamos el stock nuevo al que ya tenía
             stock: parseInt(v.stock) + stockToAdd, 
-            // Combinamos las fotos que ya tenía con las nuevas (si subiste más)
             images: [...v.images, ...newColorImages] 
           };
         }
         return v;
       });
-      // (Opcional) Feedback visual
-      // alert(`Se actualizó el color ${colorClean}: Stock sumado.`);
     } else {
-      // ✅ CASO 2: NO EXISTE -> CREAMOS UNO NUEVO
+      // CASO 2: NO EXISTE -> CREAMOS UNO NUEVO
       updatedVariants = [...variants, {
         color: colorClean,
         stock: stockToAdd,
@@ -215,7 +227,13 @@ export default function ProductEditPage() {
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Precio Base</label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                  <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} className="input-cyber pl-8" />
+                  {/* ✅ CORRECCIÓN 4: CSS FORCE (!pl-12) */}
+                  <input 
+                    type="number" 
+                    value={price} 
+                    onChange={(e) => setPrice(e.target.value)} 
+                    className="input-cyber !pl-12" 
+                  />
                 </div>
               </div>
 
@@ -233,7 +251,8 @@ export default function ProductEditPage() {
 
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Categoría</label>
-                <select value={category} onChange={(e) => setCategory(e.target.value)} className="input-cyber appearance-none cursor-pointer">
+                {/* ✅ CORRECCIÓN 5: VINCULADO AL NUEVO HANDLER */}
+                <select value={category} onChange={handleCategoryChange} className="input-cyber appearance-none cursor-pointer">
                   {CATEGORIES.map(c => <option key={c} value={c} className="bg-[#111]">{c}</option>)}
                 </select>
               </div>

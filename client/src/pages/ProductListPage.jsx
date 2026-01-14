@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 
-// Usamos las mismas listas para los filtros
 const BRANDS = ["Todas", "Apple", "Samsung", "Huawei", "Redmi", "Xiaomi", "Motorola", "Vivo", "Oppo", "Honor", "Genericos"];
 const CATEGORIES = ["Todas", "MagFrame", "MagSafe Clear", "Clear Protect", "Personalizadas", "Accesorios"];
 
@@ -43,6 +42,28 @@ export default function ProductListPage() {
     }
   };
 
+  // --- FUNCIÓN DE IMAGEN MEJORADA (BÚSQUEDA PROFUNDA) ---
+  const getProductImg = (prod) => {
+    // 1. Prioridad: Imagen de Portada Nueva
+    if (prod.images && prod.images.length > 0) return prod.images[0];
+    
+    // 2. Prioridad: Imagen de Portada Vieja
+    if (prod.imageUrl) return prod.imageUrl;
+
+    // 3. Prioridad: Buscar en CUALQUIER variante (no solo la primera)
+    if (prod.variants && prod.variants.length > 0) {
+        // Buscamos la primera variante que tenga al menos una imagen
+        const variantWithImage = prod.variants.find(v => v.images && v.images.length > 0);
+        
+        if (variantWithImage) {
+            return variantWithImage.images[0];
+        }
+    }
+
+    // 4. Fallback final
+    return "https://via.placeholder.com/150?text=Sin+Foto";
+  };
+
   const deleteHandler = async (id) => {
     if (window.confirm('¿Estás seguro de borrar este producto?')) {
       setLoadingDelete(true);
@@ -80,10 +101,11 @@ export default function ProductListPage() {
     return matchesSearch && matchesBrand && matchesCategory;
   });
 
-  if (loading) return <div className="text-white pt-20 text-center">Cargando inventario...</div>;
+  if (loading) return <div className="text-white pt-32 text-center">Cargando inventario...</div>;
 
   return (
-    <>
+    <div className="pt-32 pb-20 px-4 max-w-[1440px] mx-auto">
+      
       {/* Cabecera y Botón de Crear */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
@@ -107,9 +129,8 @@ export default function ProductListPage() {
         </button>
       </div>
 
-      {/* --- BARRA DE HERRAMIENTAS (BUSCADOR Y FILTROS) --- */}
+      {/* --- BARRA DE HERRAMIENTAS --- */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 bg-[#111] p-4 rounded-2xl border border-white/10">
-        {/* Buscador */}
         <div className="md:col-span-2 relative">
           <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">search</span>
           <input
@@ -121,25 +142,15 @@ export default function ProductListPage() {
           />
         </div>
 
-        {/* Filtro Marca */}
         <div className="relative">
-          <select
-            value={filterBrand}
-            onChange={(e) => setFilterBrand(e.target.value)}
-            className="w-full bg-black/40 border border-white/10 rounded-xl py-2 px-4 text-white appearance-none cursor-pointer focus:border-vlyck-lime outline-none"
-          >
+          <select value={filterBrand} onChange={(e) => setFilterBrand(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl py-2 px-4 text-white appearance-none cursor-pointer focus:border-vlyck-lime outline-none">
             {BRANDS.map(brand => <option key={brand} value={brand} className="bg-[#111]">{brand}</option>)}
           </select>
           <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none text-sm">expand_more</span>
         </div>
 
-        {/* Filtro Categoría */}
         <div className="relative">
-          <select
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-            className="w-full bg-black/40 border border-white/10 rounded-xl py-2 px-4 text-white appearance-none cursor-pointer focus:border-vlyck-lime outline-none"
-          >
+          <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl py-2 px-4 text-white appearance-none cursor-pointer focus:border-vlyck-lime outline-none">
             {CATEGORIES.map(cat => <option key={cat} value={cat} className="bg-[#111]">{cat}</option>)}
           </select>
           <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none text-sm">expand_more</span>
@@ -168,8 +179,14 @@ export default function ProductListPage() {
 
                   {/* Columna Imagen */}
                   <td className="px-6 py-4">
-                    <div className="w-12 h-12 rounded-lg border border-white/10 overflow-hidden bg-white/5">
-                      <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
+                    <div className="w-12 h-12 rounded-lg border border-white/10 overflow-hidden bg-white/5 flex items-center justify-center">
+                      <img 
+                        src={getProductImg(product)} 
+                        alt={product.name} 
+                        className="w-full h-full object-cover"
+                        // Si la imagen falla, ponemos placeholder
+                        onError={(e) => { e.target.src = "https://via.placeholder.com/150?text=Error" }}
+                      />
                     </div>
                   </td>
 
@@ -183,19 +200,10 @@ export default function ProductListPage() {
                   <td className="px-6 py-4 text-sm text-gray-400">{product.brand}</td>
 
                   <td className="px-6 py-4 text-right flex justify-end gap-2 items-center h-full pt-6">
-                    <Link
-                      to={`/admin/product/${product._id}/edit`}
-                      className="p-2 rounded-lg bg-white/5 text-white hover:bg-vlyck-cyan hover:text-black transition-all"
-                      title="Editar"
-                    >
+                    <Link to={`/admin/product/${product._id}/edit`} className="p-2 rounded-lg bg-white/5 text-white hover:bg-vlyck-cyan hover:text-black transition-all" title="Editar">
                       <span className="material-symbols-outlined text-[18px]">edit</span>
                     </Link>
-                    <button
-                      onClick={() => deleteHandler(product._id)}
-                      disabled={loadingDelete}
-                      className="p-2 rounded-lg bg-white/5 text-red-400 hover:bg-red-500 hover:text-white transition-all"
-                      title="Eliminar"
-                    >
+                    <button onClick={() => deleteHandler(product._id)} disabled={loadingDelete} className="p-2 rounded-lg bg-white/5 text-red-400 hover:bg-red-500 hover:text-white transition-all" title="Eliminar">
                       <span className="material-symbols-outlined text-[18px]">delete</span>
                     </button>
                   </td>
@@ -205,7 +213,7 @@ export default function ProductListPage() {
               {filteredProducts.length === 0 && (
                 <tr>
                   <td colSpan="6" className="text-center py-10 text-gray-500">
-                    {searchTerm ? 'No se encontraron productos con esa búsqueda.' : 'No hay productos todavía.'}
+                    {searchTerm ? 'No se encontraron productos.' : 'No hay productos en inventario.'}
                   </td>
                 </tr>
               )}
@@ -213,6 +221,6 @@ export default function ProductListPage() {
           </table>
         </div>
       </div>
-    </>
+    </div>
   );
 }
