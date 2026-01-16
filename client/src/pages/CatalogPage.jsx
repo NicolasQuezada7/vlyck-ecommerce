@@ -12,7 +12,7 @@ export default function CatalogPage() {
   const [filters, setFilters] = useState({ category: [], brand: [] });
 
   const brands = ["Apple", "Samsung", "Huawei", "Redmi", "Xiaomi", "Motorola", "Vivo", "Oppo", "Honor", "Genericos"];
-  const categories = ["MagFrame", "MagSafe Clear", "Clear Protect", "Personalizadas", "Accesorios"];
+  const categories = ["MagFrame", "MagSafe Clear", "Clear Protect", "Personalizadas", "Accesorios", "Láminas", "Colorful", "Transparente MagSafe"];
 
   useEffect(() => {
     const fetchProducts = async () => {

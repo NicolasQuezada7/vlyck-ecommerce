@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const BRANDS = ["Apple", "Samsung", "Huawei", "Redmi", "Xiaomi", "Motorola", "Vivo", "Oppo", "Honor", "Genericos"];
-const CATEGORIES = ["MagFrame", "MagSafe Clear", "Clear Protect", "Personalizadas", "Accesorios"];
+const CATEGORIES = ["MagFrame", "MagSafe Clear", "Clear Protect", "Personalizadas", "Accesorios", "Láminas", "Colorful", "Transparente MagSafe"];
 const PRESET_COLORS = ["Negro", "Blanco", "Rosado", "Naranja", "Burdeo", "Azul", "Verde", "Transparente", "Rojo", "Lila"];
 
 export default function ProductEditPage() {
