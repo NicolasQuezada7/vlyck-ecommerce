@@ -19,7 +19,7 @@ import ProductEditPage from './pages/ProductEditPage';
 import ProfilePage from './pages/ProfilePage'; // <--- IMPORTAR
 import PaymentSuccess from './pages/PaymentSuccess';
 import OrderSuccessPage from './pages/OrderSuccessPage';
-
+import CustomizerPage from './pages/CustomizerPage';
 // Componente interno para manejar la lógica de inactividad
 function InactivityHandler() {
   const { userInfo, logout } = useAuth();
@@ -79,7 +79,7 @@ function App() {
               <Route path="/profile" element={<ProfilePage />} /> {/* <--- RUTA NUEVA */}
               <Route path="/payment-success" element={<PaymentSuccess />} />
              <Route path="/order/:id" element={<OrderSuccessPage />} />
-
+              <Route path="/customizer" element={<CustomizerPage />} />
               {/* --- RUTAS DE AUTENTICACIÓN --- */}
               {/* Autenticación */}
               <Route path="/login" element={<LoginPage />} />

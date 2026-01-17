@@ -29,14 +29,12 @@ export default function CatalogPage() {
   useEffect(() => {
     let processed = [];
     originalProducts.forEach(product => {
-      // Helper para obtener la imagen principal (sea string o array)
       const mainImg = (Array.isArray(product.images) && product.images.length > 0)
         ? product.images[0]
-        : product.imageUrl; // Fallback legacy
+        : product.imageUrl;
 
       if (product.variants && product.variants.length > 0) {
         product.variants.forEach(variant => {
-          // Obtenemos la primera imagen de la variante, o la del producto
           const variantImg = (variant.images && variant.images.length > 0)
             ? variant.images[0]
             : mainImg;
@@ -47,7 +45,7 @@ export default function CatalogPage() {
             name: `${product.name} - ${variant.color}`,
             slug: product.slug,
             basePrice: product.basePrice,
-            imageUrl: variantImg, // Usamos la foto específica
+            imageUrl: variantImg,
             brand: product.brand,
             category: product.category,
             color: variant.color,
@@ -66,7 +64,6 @@ export default function CatalogPage() {
     });
     setDisplayItems(processed);
   }, [originalProducts]);
-  // ---------------------------------------
 
   const getFilteredItems = () => {
     let result = displayItems.filter(item => {
@@ -137,6 +134,23 @@ export default function CatalogPage() {
         </aside>
 
         <main className="flex-1 p-4 md:p-8 bg-[#050505]">
+          
+          {/* --- BANNER DE PERSONALIZACIÓN --- */}
+          {/* Se muestra si no hay filtros O si el filtro incluye 'Personalizadas' */}
+          {(filters.category.length === 0 || filters.category.includes('Personalizadas')) && (
+            <div className="w-full bg-gradient-to-r from-purple-900 to-black rounded-2xl p-8 mb-10 flex flex-col md:flex-row items-center justify-between gap-6 border border-white/10 shadow-2xl relative overflow-hidden group">
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+                <div className="relative z-10 max-w-lg">
+                    <span className="px-3 py-1 bg-vlyck-lime text-black text-xs font-black uppercase tracking-widest rounded-full mb-4 inline-block">Nuevo Motor</span>
+                    <h2 className="text-3xl md:text-4xl font-black text-white mb-2 leading-tight">Crea tu propia <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-vlyck-lime to-white">Obra de Arte</span></h2>
+                    <p className="text-gray-300 text-sm md:text-base">Sube tu foto, ajusta el diseño y recibe una carcasa única en el mundo. Disponible para iPhone 13.</p>
+                </div>
+                <Link to="/customizer" className="relative z-10 px-8 py-4 bg-white text-black font-bold rounded-xl hover:bg-vlyck-lime hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)] flex items-center gap-2 whitespace-nowrap">
+                    <span className="material-symbols-outlined">edit</span> Personalizar Ahora
+                </Link>
+            </div>
+          )}
+
           {loading ? <div className="text-center py-20 text-vlyck-lime">Cargando catálogo...</div> : finalItems.length === 0 ? <div className="flex flex-col items-center justify-center py-20 text-gray-500"><span className="material-symbols-outlined text-5xl mb-4 opacity-50">search_off</span><p>No hay variantes que coincidan.</p></div> : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {finalItems.map((item) => (
