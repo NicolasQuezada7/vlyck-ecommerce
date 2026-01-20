@@ -18,9 +18,9 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'vlyck-finanzas', // 📁 Mejor separado de los productos
-    allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'pdf'], // ✅ Agregamos PDF
-    resource_type: 'auto', // Auto-detectar si es imagen o documento raw
+    folder: 'vlyck-uploads', // Usamos una carpeta general para evitar conflictos
+    allowed_formats: ['jpg', 'png', 'jpeg', 'webp', 'pdf'], // ✅ Agregamos PDF para las boletas
+    resource_type: 'auto', // Auto-detectar si es imagen o PDF
   },
 });
 
@@ -28,7 +28,10 @@ const upload = multer({ storage });
 
 // 3. Ruta
 router.post('/', upload.single('image'), (req, res) => {
-  // Retorna la URL segura
+  if (!req.file) {
+      return res.status(400).send('No se subió ningún archivo.');
+  }
+  // Cloudinary devuelve la URL en req.file.path
   res.send(req.file.path);
 });
 
