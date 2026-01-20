@@ -7,26 +7,24 @@ import productRoutes from './routes/productRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
+import expenseRoutes from './routes/expenseRoutes.js'; // <--- 1. IMPORTAR GASTOS
 
 dotenv.config();
 connectDB();
 
 const app = express();
 
-// --- CONFIGURACIÓN DE CORS INTELIGENTE ---
-// Lista de orígenes permitidos (Tu PC y tu futuro dominio)
 const allowedOrigins = [
-  "http://localhost:5173",          // Tu PC
-  "http://localhost:5000",          // Postman / Local
-  "https://vlyck.cl",               // Tu Dominio Final (Sin www)
-  "https://www.vlyck.cl",           // Tu Dominio Final (Con www)
-  "https://vlyck-front.netlify.app", // <--- 🔴 LA QUE FALTABA (Tu Netlify actual)
-  process.env.FRONTEND_URL          // La variable de Railway
+  "http://localhost:5173",
+  "http://localhost:5000",
+  "https://vlyck.cl",
+  "https://www.vlyck.cl",
+  "https://vlyck-front.netlify.app",
+  process.env.FRONTEND_URL
 ];
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Permitir solicitudes sin origen (como Postman) o si el origen está en la lista
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -34,7 +32,7 @@ app.use(cors({
       callback(new Error('No permitido por CORS'));
     }
   },
-  credentials: true // Permite envío de cookies/headers de autorización
+  credentials: true 
 }));
 
 app.use(express.json());
@@ -43,11 +41,9 @@ app.use(express.json());
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/upload', uploadRoutes);
-
-// Ruta de Pagos
 app.use('/api/payment', paymentRoutes);
+app.use('/api/expenses', expenseRoutes); // <--- 2. USAR RUTA DE GASTOS
 
-// Ruta de Órdenes
 if (orderRoutes) {
   app.use('/api/orders', orderRoutes);
 } else {

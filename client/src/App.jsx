@@ -20,6 +20,9 @@ import ProfilePage from './pages/ProfilePage'; // <--- IMPORTAR
 import PaymentSuccess from './pages/PaymentSuccess';
 import OrderSuccessPage from './pages/OrderSuccessPage';
 import CustomizerPage from './pages/CustomizerPage';
+import PosPage from './pages/admin/PosPage';          // <--- IMPORTAR
+import FinancePage from './pages/admin/FinancePage';
+
 // Componente interno para manejar la lógica de inactividad
 function InactivityHandler() {
   const { userInfo, logout } = useAuth();
@@ -90,6 +93,8 @@ function App() {
 
               {/* --- RUTAS PROTEGIDAS (ADMIN) --- */}
               <Route element={<AdminLayout />}>
+                <Route path="/admin/pos" element={<PosPage />} />         {/* <--- RUTA POS */}
+                <Route path="/admin/finance" element={<FinancePage />} /> {/* <--- RUTA FINANZAS */}
                 <Route path="/admin/dashboard" element={<DashboardPage />} />
                 <Route path="/admin/productlist" element={<ProductListPage />} />
                 <Route path="/admin/product/:id/edit" element={<ProductEditPage />} />

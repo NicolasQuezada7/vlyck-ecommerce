@@ -1,26 +1,29 @@
 import express from 'express';
 import { protect, admin } from '../middleware/authMiddleware.js';
-// Importamos TODAS las funciones del controlador
 import { 
     addOrderItems, 
     getOrderById, 
     updateOrderToPaid, 
     updateOrderToDelivered,
-    getMyOrders, // <--- ESTA ES LA QUE TE FALTA IMPORTAR
-    getOrders 
+    getMyOrders, 
+    getOrders,
+    addPosOrder // <--- IMPORTADA
 } from '../controllers/orderController.js';
 
 const router = express.Router();
 
-// 1. Ruta Raíz
+// Rutas Raíz
 router.route('/')
-    .post(protect, addOrderItems) // Agregué 'protect' para que solo usuarios logueados compren
+    .post(protect, addOrderItems) 
     .get(protect, admin, getOrders);
 
-// 2. 👇 RUTA CRÍTICA PARA EL PERFIL (Debe ir ANTES de /:id)
+// Ruta Mis Ordenes
 router.route('/myorders').get(protect, getMyOrders);
 
-// 3. Rutas con ID (Detalles, Pagar, Entregar)
+// 👇 RUTA POS (Nueva)
+router.route('/pos').post(protect, admin, addPosOrder);
+
+// Rutas con ID (Siempre al final para no chocar)
 router.route('/:id').get(protect, getOrderById);
 router.route('/:id/pay').put(protect, updateOrderToPaid);
 router.route('/:id/deliver').put(protect, admin, updateOrderToDelivered);

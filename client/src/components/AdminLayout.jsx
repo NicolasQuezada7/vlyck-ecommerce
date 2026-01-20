@@ -40,7 +40,9 @@ export default function AdminLayout() {
             <span className="material-symbols-outlined">dashboard</span>
             <span className="hidden md:block font-medium text-sm">Dashboard</span>
           </Link>
-
+            <Link to="/admin/pos" className="flex items-center gap-2 p-2 hover:text-vlyck-lime">
+              <span className="material-symbols-outlined">point_of_sale</span> POS
+            </Link>
           {/* Link Productos */}
           <Link 
             to="/admin/productlist" 
@@ -53,14 +55,16 @@ export default function AdminLayout() {
             <span className="material-symbols-outlined">inventory_2</span>
             <span className="hidden md:block font-medium text-sm">Productos</span>
           </Link>
-
+               <Link to="/admin/finance" className="flex items-center gap-2 p-2 hover:text-vlyck-lime">
+              <span className="material-symbols-outlined">attach_money</span> Finanzas
+          </Link> 
           {/* Link Clientes (Placeholder) */}
           <div className="flex items-center gap-3 px-3 md:px-4 py-3 rounded-xl text-gray-400 hover:bg-white/5 transition-all cursor-pointer opacity-50">
              <span className="material-symbols-outlined">group</span>
              <span className="hidden md:block font-medium text-sm">Clientes</span>
           </div>
         </nav>
-
+        
         <div className="p-4 md:p-6 border-t border-white/5 mt-auto mb-10">
           <button onClick={handleLogout} className="w-full flex items-center gap-3 px-3 md:px-4 py-3 rounded-xl text-red-400/70 hover:text-red-400 hover:bg-red-400/10 transition-all">
             <span className="material-symbols-outlined">logout</span>
