@@ -7,7 +7,8 @@ import {
     updateOrderToDelivered,
     getMyOrders, 
     getOrders,
-    addPosOrder // <--- IMPORTADA
+    addPosOrder,
+    deleteOrder // <--- IMPORTADA
 } from '../controllers/orderController.js';
 
 const router = express.Router();
@@ -24,7 +25,7 @@ router.route('/myorders').get(protect, getMyOrders);
 router.route('/pos').post(protect, admin, addPosOrder);
 
 // Rutas con ID (Siempre al final para no chocar)
-router.route('/:id').get(protect, getOrderById);
+router.route('/:id').get(protect, getOrderById, deleteOrder);
 router.route('/:id/pay').put(protect, updateOrderToPaid);
 router.route('/:id/deliver').put(protect, admin, updateOrderToDelivered);
 

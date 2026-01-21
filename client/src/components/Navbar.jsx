@@ -42,6 +42,8 @@ export default function Navbar() {
           <div className="hidden md:flex items-center justify-center flex-1 gap-10 absolute left-1/2 -translate-x-1/2">
             <Link to="/" className="text-sm font-bold uppercase tracking-widest text-gray-300 hover:text-vlyck-lime transition-colors">Inicio</Link>
             <Link to="/all" className="text-sm font-bold uppercase tracking-widest text-gray-300 hover:text-vlyck-lime transition-colors">Catálogo</Link>
+            {/* NUEVA SECCIÓN PERSONALIZA */}
+            <Link to="/customizer" className="text-sm font-bold uppercase tracking-widest text-gray-300 hover:text-vlyck-lime transition-colors">Personaliza</Link>
             <Link to="/about" className="text-sm font-bold uppercase tracking-widest text-gray-300 hover:text-vlyck-lime transition-colors">Nosotros</Link>
           </div>
 
@@ -117,6 +119,8 @@ export default function Navbar() {
         <div className="md:hidden bg-[#050505] border-b border-white/10 px-4 pt-2 pb-8 flex flex-col gap-4 shadow-2xl h-screen fixed top-24 left-0 w-full z-40 overflow-y-auto">
           <Link to="/" onClick={() => setMenuOpen(false)} className="text-xl font-bold text-gray-300 py-3 border-b border-white/5 flex items-center justify-between">INICIO</Link>
           <Link to="/all" onClick={() => setMenuOpen(false)} className="text-xl font-bold text-gray-300 py-3 border-b border-white/5 flex items-center justify-between">CATÁLOGO</Link>
+          {/* NUEVA SECCIÓN PERSONALIZA MÓVIL */}
+          <Link to="/customizer" onClick={() => setMenuOpen(false)} className="text-xl font-bold text-gray-300 py-3 border-b border-white/5 flex items-center justify-between">PERSONALIZA</Link>
           
           {userInfo && userInfo.isAdmin && (
             <Link to="/admin/productlist" onClick={() => setMenuOpen(false)} className="mt-4 px-4 py-4 bg-[#111] border border-vlyck-lime text-vlyck-lime rounded-xl text-center font-black uppercase tracking-widest shadow-lg">Panel Admin</Link>

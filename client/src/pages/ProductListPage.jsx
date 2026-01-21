@@ -104,7 +104,7 @@ export default function ProductListPage() {
   if (loading) return <div className="text-white pt-32 text-center">Cargando inventario...</div>;
 
   return (
-    <div className="pt-32 pb-20 px-4 max-w-[1440px] mx-auto">
+    <div className="pt-14 pb-20 px-4 max-w-[1440px] mx-auto">
       
       {/* Cabecera y Botón de Crear */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">

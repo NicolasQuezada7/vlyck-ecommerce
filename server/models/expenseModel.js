@@ -12,22 +12,20 @@ const expenseSchema = mongoose.Schema(
     category: { 
       type: String, 
       required: true, 
-      enum: ['Inventario', 'Marketing', 'Logística', 'Servicios', 'Impuestos', 'Otros'] 
+      enum: ['Insumos', 'Publicidad', 'Envíos', 'Otros'] // ✅ Nuevas Categorías
     },
     date: { type: Date, default: Date.now },
-    
-    // ✅ CAMBIO 1: Relación real con Proveedor (opcional, por si es un gasto casual)
     supplier: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Supplier',
     },
-    // ✅ CAMBIO 2: Campo de respaldo (string para buscar rápido si no hay proveedor creado)
     supplierName: { type: String },
-
-    // ✅ CAMBIO 3: URL del archivo (PDF o Imagen)
-    invoiceUrl: { type: String }, 
     
-    status: { type: String, default: 'Pagado', enum: ['Pagado', 'Pendiente'] } // Para deudas
+    // ✅ CAMBIO: Array de Strings para múltiples archivos
+    attachments: [{ type: String }], 
+    
+    // Mantenemos invoiceUrl por compatibilidad con datos viejos (opcional)
+    invoiceUrl: { type: String }, 
   },
   { timestamps: true }
 );

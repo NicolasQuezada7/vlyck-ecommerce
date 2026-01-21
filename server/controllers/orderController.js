@@ -199,10 +199,56 @@ const getMyOrders = asyncHandler(async (req, res) => {
 // @desc    Get all orders
 // @route   GET /api/orders
 // @access  Private/Admin
+// @desc    Obtener todas las ordenes (Admin)
+// @route   GET /api/orders
+// @access  Private/Admin
 const getOrders = asyncHandler(async (req, res) => {
-  const orders = await Order.find({}).populate('user', 'id name');
+  // Traemos TODAS las ordenes, populando datos del usuario, ordenadas por fecha reciente
+  const orders = await Order.find({})
+    .populate('user', 'id name email')
+    .sort({ createdAt: -1 }); 
+    
   res.json(orders);
 });
+// ... imports anteriores ...
+
+// @desc    Borrar orden y REVERTIR STOCK (Devolución)
+// @route   DELETE /api/orders/:id
+// @access  Private/Admin
+const deleteOrder = asyncHandler(async (req, res) => {
+  const order = await Order.findById(req.params.id);
+
+  if (order) {
+    // 1. REVERTIR STOCK (Magia aquí 🪄)
+    // Solo revertimos si la orden no había sido cancelada antes para evitar duplicidad
+    for (const item of order.orderItems) {
+      const product = await Product.findById(item.product);
+      
+      if (product) {
+        if (item.variant && item.variant.color) {
+          // A) Devolver a variante
+          const variant = product.variants.find(v => v.color === item.variant.color);
+          if (variant) {
+            variant.stock += item.qty; // SUMAMOS de vuelta
+          }
+        } else {
+          // B) Devolver a producto simple
+          product.countInStock += item.qty; // SUMAMOS de vuelta
+        }
+        await product.save();
+      }
+    }
+
+    // 2. Eliminar la orden
+    await order.deleteOne();
+    res.json({ message: 'Orden eliminada y stock restaurado' });
+  } else {
+    res.status(404);
+    throw new Error('Orden no encontrada');
+  }
+});
+
+// ¡AGREGA deleteOrder AL EXPORT FINAL!
 
 export {
   addOrderItems,
@@ -212,4 +258,5 @@ export {
   updateOrderToDelivered,
   getMyOrders,
   getOrders,
+  deleteOrder
 };

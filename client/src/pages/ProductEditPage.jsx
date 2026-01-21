@@ -16,7 +16,7 @@ export default function ProductEditPage() {
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
   const [price, setPrice] = useState(0);
-  const [images, setImages] = useState([]); // Galería Principal
+  const [images, setImages] = useState([]); 
   const [brand, setBrand] = useState('Genericos');
   const [category, setCategory] = useState('Accesorios');
   const [description, setDescription] = useState('');
@@ -25,7 +25,7 @@ export default function ProductEditPage() {
   const [variants, setVariants] = useState([]);
   const [newColor, setNewColor] = useState('');
   const [newColorStock, setNewColorStock] = useState(0);
-  const [newColorImages, setNewColorImages] = useState([]); // Galería temporal para variante
+  const [newColorImages, setNewColorImages] = useState([]); 
 
   // --- ESTADOS DE CARGA ---
   const [uploading, setUploading] = useState(false);
@@ -35,6 +35,8 @@ export default function ProductEditPage() {
   const isCreating = name.includes('Producto Nuevo');
 
   useEffect(() => {
+    window.scrollTo(0, 0); 
+    
     const fetchProduct = async () => {
       try {
         const config = { headers: { Authorization: `Bearer ${userInfo.token}` } };
@@ -44,7 +46,6 @@ export default function ProductEditPage() {
         setSlug(data.slug);
         setPrice(data.basePrice);
 
-        // Manejo inteligente de imágenes (si es string o array)
         if (data.images && Array.isArray(data.images)) {
           setImages(data.images);
         } else if (data.imageUrl) {
@@ -67,31 +68,22 @@ export default function ProductEditPage() {
     else navigate('/admin');
   }, [productId, userInfo, navigate]);
 
-  // ✅ CORRECCIÓN 1: SLUG ÚNICO AL ESCRIBIR NOMBRE
   const handleNameChange = (e) => {
     const val = e.target.value;
     setName(val);
-    
-    // TRUCO: Combinamos Nombre + Categoría para el Slug
     const combined = `${val} ${category}`; 
     const autoSlug = combined.toLowerCase().trim().replace(/ /g, '-').replace(/[^\w-]+/g, '');
-    
     setSlug(autoSlug);
   };
 
-  // ✅ CORRECCIÓN 2: SLUG ÚNICO AL CAMBIAR CATEGORÍA
   const handleCategoryChange = (e) => {
     const newCategory = e.target.value;
     setCategory(newCategory);
-
-    // Si cambiamos la categoría, actualizamos el slug también para evitar choques
     const combined = `${name} ${newCategory}`;
     const autoSlug = combined.toLowerCase().trim().replace(/ /g, '-').replace(/[^\w-]+/g, '');
-    
     setSlug(autoSlug);
   };
 
-  // --- SUBIDA DE IMÁGENES ---
   const uploadFileHandler = async (e, isVariant = false) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -120,21 +112,16 @@ export default function ProductEditPage() {
     else setImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  // ✅ CORRECCIÓN 3: FUSIÓN DE VARIANTES (MERGE)
   const addVariant = () => {
     if (!newColor) return alert("Selecciona o escribe un color");
 
-    // Limpiamos espacios
     const colorClean = newColor.trim();
     const stockToAdd = parseInt(newColorStock) || 0;
-
-    // Verificamos si existe (ignorando mayúsculas/minúsculas)
     const exists = variants.find(v => v.color.toLowerCase() === colorClean.toLowerCase());
 
     let updatedVariants;
 
     if (exists) {
-      // CASO 1: EL COLOR YA EXISTE -> ACTUALIZAMOS (SUMAR STOCK Y FOTOS)
       updatedVariants = variants.map(v => {
         if (v.color.toLowerCase() === colorClean.toLowerCase()) {
           return {
@@ -146,7 +133,6 @@ export default function ProductEditPage() {
         return v;
       });
     } else {
-      // CASO 2: NO EXISTE -> CREAMOS UNO NUEVO
       updatedVariants = [...variants, {
         color: colorClean,
         stock: stockToAdd,
@@ -155,8 +141,6 @@ export default function ProductEditPage() {
     }
 
     setVariants(updatedVariants);
-
-    // Resetear inputs para seguir agregando
     setNewColor('');
     setNewColorStock(0);
     setNewColorImages([]);
@@ -188,7 +172,7 @@ export default function ProductEditPage() {
   if (loading) return <div className="min-h-screen flex items-center justify-center text-vlyck-lime">Cargando editor...</div>;
 
   return (
-    <div className="mx-auto max-w-6xl pb-20">
+    <div className="mx-auto max-w-6xl pb-32 pt-10 px-4">
 
       {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
@@ -200,15 +184,11 @@ export default function ProductEditPage() {
             {isCreating ? 'Nuevo Producto' : 'Editar Producto'}
           </h1>
         </div>
-        <button onClick={submitHandler} className="px-8 py-4 bg-vlyck-gradient text-black font-black rounded-xl uppercase tracking-widest hover:scale-105 transition-transform shadow-[0_0_20px_rgba(167,255,45,0.3)] flex items-center gap-2">
-          <span className="material-symbols-outlined">save</span>
-          Guardar Todo
-        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-        {/* COLUMNA IZQUIERDA: DATOS GENERALES */}
+        {/* COLUMNA IZQUIERDA: DATOS GENERALES (Más larga) */}
         <div className="lg:col-span-2 flex flex-col gap-8">
 
           {/* Tarjeta Información Básica */}
@@ -227,7 +207,6 @@ export default function ProductEditPage() {
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Precio Base</label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                  {/* ✅ CORRECCIÓN 4: CSS FORCE (!pl-12) */}
                   <input 
                     type="number" 
                     value={price} 
@@ -251,7 +230,6 @@ export default function ProductEditPage() {
 
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-widest pl-1">Categoría</label>
-                {/* ✅ CORRECCIÓN 5: VINCULADO AL NUEVO HANDLER */}
                 <select value={category} onChange={handleCategoryChange} className="input-cyber appearance-none cursor-pointer">
                   {CATEGORIES.map(c => <option key={c} value={c} className="bg-[#111]">{c}</option>)}
                 </select>
@@ -264,7 +242,7 @@ export default function ProductEditPage() {
             </div>
           </div>
 
-          {/* Tarjeta Variantes (Colores) */}
+          {/* Tarjeta Variantes */}
           <div className="bg-[#111] border border-white/10 rounded-3xl p-8 shadow-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
               <span className="material-symbols-outlined text-[150px] text-vlyck-lime">palette</span>
@@ -280,13 +258,9 @@ export default function ProductEditPage() {
               </div>
             </div>
 
-            {/* AREA DE CREAR VARIANTE */}
             <div className="bg-black/40 border border-white/10 rounded-2xl p-6 mb-6 relative z-10">
               <h4 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Agregar Nueva Variante</h4>
-
               <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-
-                {/* 1. Elegir Color y Stock */}
                 <div className="md:col-span-5 flex flex-col gap-4">
                   <div>
                     <label className="text-xs text-gray-500 mb-1 block">Color</label>
@@ -303,19 +277,13 @@ export default function ProductEditPage() {
                     <input type="number" value={newColorStock} onChange={(e) => setNewColorStock(e.target.value)} className="input-cyber" />
                   </div>
                 </div>
-
-                {/* 2. Subir Fotos */}
                 <div className="md:col-span-7 flex flex-col">
-                  <label className="text-xs text-gray-500 mb-2 block">Galería del Color (Máx 3 rec.)</label>
-
+                  <label className="text-xs text-gray-500 mb-2 block">Galería del Color (Máx 5 rec.)</label>
                   <div className="flex gap-3 mb-3 overflow-x-auto pb-2">
-                    {/* Botón Subir */}
                     <label className="w-20 h-20 shrink-0 cursor-pointer bg-white/5 border border-dashed border-white/20 rounded-xl flex flex-col items-center justify-center hover:bg-white/10 hover:border-vlyck-lime/50 transition-all text-gray-400 hover:text-white">
                       <span className="material-symbols-outlined">{uploading ? 'hourglass_top' : 'add_photo_alternate'}</span>
                       <input type="file" className="hidden" onChange={(e) => uploadFileHandler(e, true)} disabled={uploading} />
                     </label>
-
-                    {/* Previews */}
                     {newColorImages.map((img, idx) => (
                       <div key={idx} className="relative w-20 h-20 shrink-0 group">
                         <img src={img} className="w-full h-full object-cover rounded-xl border border-white/10" />
@@ -328,16 +296,13 @@ export default function ProductEditPage() {
                   <p className="text-[10px] text-gray-600">Sube fotos específicas para este color (Frontal, Trasera, Detalle)</p>
                 </div>
               </div>
-
               <button type="button" onClick={addVariant} className="w-full mt-4 py-3 bg-white/10 hover:bg-vlyck-lime hover:text-black rounded-xl font-bold transition-all border border-white/10 flex items-center justify-center gap-2">
                 <span className="material-symbols-outlined">add_circle</span> Agregar Variante
               </button>
             </div>
 
-            {/* LISTA DE VARIANTES CREADAS */}
             <div className="space-y-3 relative z-10">
-              {variants.length === 0 && <div className="text-center text-gray-600 py-4 italic">No hay variantes creadas. El producto se mostrará sin opciones de color.</div>}
-
+              {variants.length === 0 && <div className="text-center text-gray-600 py-4 italic">No hay variantes creadas.</div>}
               {variants.map((v, i) => (
                 <div key={i} className="flex items-center justify-between p-4 bg-black/40 rounded-xl border border-white/5 hover:border-white/20 transition-colors group">
                   <div className="flex items-center gap-4">
@@ -357,12 +322,12 @@ export default function ProductEditPage() {
               ))}
             </div>
           </div>
-
         </div>
 
-        {/* COLUMNA DERECHA: IMÁGENES GLOBALES */}
+        {/* COLUMNA DERECHA: GALERÍA Y BOTÓN GUARDAR (Sticky) */}
         <div className="flex flex-col gap-8">
-          <div className="bg-[#111] border border-white/10 rounded-3xl p-8 shadow-xl sticky top-8">
+          
+          <div className="bg-[#111] border border-white/10 rounded-3xl p-8 shadow-xl">
             <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
               <span className="material-symbols-outlined text-vlyck-cyan">image</span> Galería General
             </h3>
@@ -387,6 +352,19 @@ export default function ProductEditPage() {
               </label>
             </div>
           </div>
+
+          {/* ✅ BOTÓN DE GUARDAR AQUÍ (COLUMNA DERECHA) */}
+          <div className="sticky top-24">
+              <button 
+                onClick={submitHandler} 
+                className="w-full py-5 bg-vlyck-gradient text-black font-black rounded-2xl uppercase tracking-widest hover:scale-105 transition-transform shadow-[0_0_30px_rgba(167,255,45,0.4)] flex items-center justify-center gap-3 text-lg"
+              >
+                <span className="material-symbols-outlined text-2xl">save</span>
+                Guardar Todo
+              </button>
+              <p className="text-center text-xs text-gray-500 mt-3">Los cambios se publicarán inmediatamente.</p>
+          </div>
+
         </div>
 
       </div>
@@ -394,22 +372,21 @@ export default function ProductEditPage() {
       <style>{`
         .input-cyber {
             width: 100%;
-            background-color: #000; /* Fondo negro absoluto para contraste */
+            background-color: #000;
             border: 1px solid rgba(255,255,255,0.15);
-            border-radius: 0.75rem; /* rounded-xl */
+            border-radius: 0.75rem;
             padding: 0.75rem 1rem;
             color: white;
             outline: none;
             transition: all 0.2s;
         }
         .input-cyber:focus {
-            border-color: #a7ff2d; /* Vlyck Lime */
+            border-color: #a7ff2d;
             box-shadow: 0 0 0 1px #a7ff2d;
         }
         .input-cyber::placeholder {
             color: #444;
         }
-        /* Color del icono de select */
         select.input-cyber {
              background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
              background-position: right 0.5rem center;

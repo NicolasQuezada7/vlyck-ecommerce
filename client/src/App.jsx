@@ -1,35 +1,41 @@
-import { useEffect } from 'react'; // <--- Importar useEffect
-import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 
-// ... (Tus imports de componentes y páginas siguen igual) ...
+// --- COMPONENTES GLOBALES ---
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import AdminLayout from './components/AdminLayout';
+
+// --- PÁGINAS PÚBLICAS ---
 import HomePage from './pages/HomePage';
 import CatalogPage from './pages/CatalogPage';
 import ProductPage from './pages/ProductPage';
 import CartPage from './pages/CartPage';
 import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage'; // <--- NUEVA PÁGINA QUE CREAREMOS
-import DashboardPage from './pages/DashboardPage';
-import ProductListPage from './pages/ProductListPage';
-import ProductEditPage from './pages/ProductEditPage';
-import ProfilePage from './pages/ProfilePage'; // <--- IMPORTAR
+import RegisterPage from './pages/RegisterPage';
+import ProfilePage from './pages/ProfilePage';
 import PaymentSuccess from './pages/PaymentSuccess';
 import OrderSuccessPage from './pages/OrderSuccessPage';
 import CustomizerPage from './pages/CustomizerPage';
-import PosPage from './pages/admin/PosPage';          // <--- IMPORTAR
+
+// --- PÁGINAS ADMIN (CARPETA /admin) ---
+import DashboardPage from './pages/admin/DashboardPage';
+import PosPage from './pages/admin/PosPage';
 import FinancePage from './pages/admin/FinancePage';
 
-// Componente interno para manejar la lógica de inactividad
+// --- PÁGINAS ADMIN (CARPETA RAÍZ /pages) ---
+// (Estas dijiste que NO están en la carpeta admin)
+import ProductListPage from './pages/ProductListPage';
+import ProductEditPage from './pages/ProductEditPage';
+
+// Componente interno para manejar inactividad
 function InactivityHandler() {
   const { userInfo, logout } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Si no hay usuario o no es admin, no hacemos nada
     if (!userInfo || !userInfo.isAdmin) return;
 
     const TIMEOUT_MS = 30 * 60 * 1000; // 30 Minutos
@@ -44,12 +50,10 @@ function InactivityHandler() {
       }, TIMEOUT_MS);
     };
 
-    // Eventos que reinician el contador
     window.addEventListener('mousemove', resetTimer);
     window.addEventListener('keydown', resetTimer);
     window.addEventListener('click', resetTimer);
 
-    // Iniciar timer la primera vez
     resetTimer();
 
     return () => {
@@ -67,11 +71,12 @@ function App() {
   return (
     <AuthProvider>
       <CartProvider>
-        {/* El Handler debe estar DENTRO del AuthProvider */}
         <InactivityHandler />
 
         <div className="min-h-screen bg-[#050505] text-white font-sans flex flex-col">
+          {/* Navbar Global (Visible en todas partes) */}
           <Navbar />
+          
           <main className="flex-grow w-full">
             <Routes>
               {/* --- RUTAS PÚBLICAS --- */}
@@ -79,28 +84,31 @@ function App() {
               <Route path="/all" element={<CatalogPage />} />
               <Route path="/product/:slug" element={<ProductPage />} />
               <Route path="/cart" element={<CartPage />} />
-              <Route path="/profile" element={<ProfilePage />} /> {/* <--- RUTA NUEVA */}
+              <Route path="/profile" element={<ProfilePage />} />
               <Route path="/payment-success" element={<PaymentSuccess />} />
-             <Route path="/order/:id" element={<OrderSuccessPage />} />
+              <Route path="/order/:id" element={<OrderSuccessPage />} />
               <Route path="/customizer" element={<CustomizerPage />} />
-              {/* --- RUTAS DE AUTENTICACIÓN --- */}
-              {/* Autenticación */}
+              
+              {/* --- AUTENTICACIÓN --- */}
               <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} /> {/* <--- RUTA NUEVA */}
+              <Route path="/register" element={<RegisterPage />} />
 
-              {/* Truco: Si entran a /admin y no están logueados, van al login. Si están, al dashboard */}
+              {/* Redirección inteligente para /admin */}
               <Route path="/admin" element={<LoginPage />} />
 
               {/* --- RUTAS PROTEGIDAS (ADMIN) --- */}
               <Route element={<AdminLayout />}>
-                <Route path="/admin/pos" element={<PosPage />} />         {/* <--- RUTA POS */}
-                <Route path="/admin/finance" element={<FinancePage />} /> {/* <--- RUTA FINANZAS */}
                 <Route path="/admin/dashboard" element={<DashboardPage />} />
+                <Route path="/admin/pos" element={<PosPage />} />
+                <Route path="/admin/finance" element={<FinancePage />} />
+                
+                {/* Estas rutas usan los archivos que están en /pages raíz */}
                 <Route path="/admin/productlist" element={<ProductListPage />} />
                 <Route path="/admin/product/:id/edit" element={<ProductEditPage />} />
               </Route>
             </Routes>
           </main>
+          
           <Footer />
         </div>
       </CartProvider>
