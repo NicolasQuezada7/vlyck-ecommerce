@@ -8,7 +8,9 @@ import {
     getMyOrders, 
     getOrders,
     addPosOrder,
-    deleteOrder // <--- IMPORTADA
+    deleteOrder,
+    updateManualOrder,
+    payOrderBalance 
 } from '../controllers/orderController.js';
 
 const router = express.Router();
@@ -28,5 +30,8 @@ router.route('/pos').post(protect, admin, addPosOrder);
 router.route('/:id').get(protect, getOrderById, deleteOrder);
 router.route('/:id/pay').put(protect, updateOrderToPaid);
 router.route('/:id/deliver').put(protect, admin, updateOrderToDelivered);
-
+router.route('/:id/manual-update').put(protect, admin, updateManualOrder);
+router.route('/:id/pay-balance').put(protect, admin, payOrderBalance);
+router.route('/:id/manual-update').put(protect, admin, updateManualOrder);
+router.route('/:id/pay-balance').put(protect, admin, payOrderBalance);
 export default router;

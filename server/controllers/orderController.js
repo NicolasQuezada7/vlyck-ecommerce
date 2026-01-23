@@ -263,7 +263,94 @@ const deleteOrder = asyncHandler(async (req, res) => {
     throw new Error('Orden no encontrada');
   }
 });
+// ... (código existente)
 
+// @desc    Actualizar orden manual (Editar datos)
+// @route   PUT /api/orders/:id/manual-update
+// @access  Private/Admin
+// @desc    Actualizar orden manual (Editar datos completos)
+// @route   PUT /api/orders/:id/manual-update
+// @access  Private/Admin
+const updateManualOrder = asyncHandler(async (req, res) => {
+  const order = await Order.findById(req.params.id);
+
+  if (order) {
+    // 1. Actualizar Datos Cliente
+    order.guestInfo.name = req.body.clientName || order.guestInfo.name;
+    order.guestInfo.phone = req.body.phone || order.guestInfo.phone;
+    order.guestInfo.instagramUser = req.body.instagramUser || order.guestInfo.instagramUser;
+    
+    // 2. Actualizar Dirección
+    if (req.body.shippingAddress) {
+        order.shippingAddress = req.body.shippingAddress;
+    }
+
+    // 3. Actualizar Ítems (Si vienen nuevos)
+    if (req.body.orderItems && req.body.orderItems.length > 0) {
+        order.orderItems = req.body.orderItems.map(item => ({
+            ...item,
+            _id: undefined // Generar nuevos IDs
+        }));
+    }
+
+    // 4. Actualizar Totales Financieros
+    // Importante: El frontend ya calculó los descuentos y promociones
+    if (req.body.totalPrice !== undefined) {
+        order.itemsPrice = req.body.itemsPrice;
+        order.shippingPrice = req.body.shippingPrice;
+        order.totalPrice = req.body.totalPrice;
+        
+        // Recalcular saldo restante basado en el nuevo total y lo que ya había abonado
+        order.remainingAmount = order.totalPrice - (order.depositAmount || 0);
+        
+        // Ajustar estados de pago
+        if (order.remainingAmount <= 0) {
+            order.remainingAmount = 0;
+            order.isPaid = true;
+            order.isPartiallyPaid = false;
+            if (!order.paidAt) order.paidAt = Date.now();
+        } else {
+            order.isPaid = false;
+            order.isPartiallyPaid = (order.depositAmount > 0);
+        }
+    }
+
+    const updatedOrder = await order.save();
+    res.json(updatedOrder);
+  } else {
+    res.status(404);
+    throw new Error('Orden no encontrada');
+  }
+});
+// @desc    Registrar Pago del Saldo Restante
+// @route   PUT /api/orders/:id/pay-balance
+// @access  Private/Admin
+const payOrderBalance = asyncHandler(async (req, res) => {
+  const order = await Order.findById(req.params.id);
+
+  if (order) {
+    const amountPaid = Number(req.body.amount);
+    order.depositAmount = (order.depositAmount || 0) + amountPaid;
+    order.remainingAmount = order.totalPrice - order.depositAmount;
+    
+    // Si ya cubrió todo o más, se marca pagada
+    if (order.remainingAmount <= 0) {
+        order.remainingAmount = 0;
+        order.isPaid = true;
+        order.paidAt = Date.now();
+        order.isPartiallyPaid = false;
+        order.paymentMethod = req.body.paymentMethod || 'Efectivo/Transferencia';
+    } else {
+        order.isPartiallyPaid = true;
+    }
+
+    const updatedOrder = await order.save();
+    res.json(updatedOrder);
+  } else {
+    res.status(404);
+    throw new Error('Orden no encontrada');
+  }
+});
 export {
   addOrderItems,
   addPosOrder,
@@ -272,5 +359,7 @@ export {
   updateOrderToDelivered,
   getMyOrders,
   getOrders,
-  deleteOrder
+  deleteOrder,
+  updateManualOrder,
+  payOrderBalance,
 };
