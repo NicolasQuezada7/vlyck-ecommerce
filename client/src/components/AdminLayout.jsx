@@ -53,6 +53,10 @@ export default function AdminLayout() {
             <span className="material-symbols-outlined">attach_money</span>
             <span className="hidden md:block">Finanzas</span>
           </Link>
+          <Link to="/admin/custom-orders" className={linkClass('/admin/custom-orders')}>
+            <span className="material-symbols-outlined">brush</span>
+            <span className="hidden md:block">Personalizadas</span>
+          </Link>
           <div className="flex items-center gap-3 px-3 md:px-4 py-3 rounded-xl text-gray-600 cursor-not-allowed border border-transparent opacity-50">
              <span className="material-symbols-outlined">group</span>
              <span className="hidden md:block text-sm font-medium">Clientes</span>

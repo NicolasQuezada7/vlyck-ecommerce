@@ -24,7 +24,7 @@ import CustomizerPage from './pages/CustomizerPage';
 import DashboardPage from './pages/admin/DashboardPage';
 import PosPage from './pages/admin/PosPage';
 import FinancePage from './pages/admin/FinancePage';
-
+import CustomManagerPage from './pages/admin/CustomManagerPage';
 // --- PÁGINAS ADMIN (CARPETA RAÍZ /pages) ---
 // (Estas dijiste que NO están en la carpeta admin)
 import ProductListPage from './pages/ProductListPage';
@@ -101,7 +101,7 @@ function App() {
                 <Route path="/admin/dashboard" element={<DashboardPage />} />
                 <Route path="/admin/pos" element={<PosPage />} />
                 <Route path="/admin/finance" element={<FinancePage />} />
-                
+                <Route path="/admin/custom-orders" element={<CustomManagerPage />} />  
                 {/* Estas rutas usan los archivos que están en /pages raíz */}
                 <Route path="/admin/productlist" element={<ProductListPage />} />
                 <Route path="/admin/product/:id/edit" element={<ProductEditPage />} />

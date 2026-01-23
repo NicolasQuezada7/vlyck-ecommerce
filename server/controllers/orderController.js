@@ -2,7 +2,7 @@ import asyncHandler from 'express-async-handler';
 import Order from '../models/orderModel.js';
 import Product from '../models/productModel.js'; 
 
-// @desc    Create new order (WEB)
+// @desc    Create new order (WEB & MANUAL)
 // @route   POST /api/orders
 // @access  Private
 const addOrderItems = asyncHandler(async (req, res) => {
@@ -14,44 +14,48 @@ const addOrderItems = asyncHandler(async (req, res) => {
     taxPrice,
     shippingPrice,
     totalPrice,
-    guestInfo
+    // --- NUEVOS CAMPOS (Corrección para el error 500) ---
+    guestInfo,
+    isCustomOrder,
+    orderSource,
+    depositAmount,
+    remainingAmount,
+    isPartiallyPaid,
+    workflowStatus,
+    isPaid
   } = req.body;
 
   if (orderItems && orderItems.length === 0) {
     res.status(400);
-    throw new Error('No order items');
+    throw new Error('No hay ítems en la orden');
   } else {
-    // --- 🛡️ VALIDACIÓN DE STOCK (WEB) ---
+    
+    // --- 🛡️ VALIDACIÓN DE STOCK (Solo si es Web o si quieres validar manuales también) ---
+    // Nota: Si vendes un "Servicio" manual que no tiene stock físico, podrías saltar esto.
+    // Pero por seguridad lo dejamos para mantener inventario cuadrado.
     for (const item of orderItems) {
-      const productDb = await Product.findById(item.product);
-
-      if (!productDb) {
-        res.status(404);
-        throw new Error(`El producto ${item.name} ya no existe.`);
-      }
-
-      const variantColor = item.selectedVariant?.color || item.variant?.color;
-
-      if (variantColor) {
-        const variantDb = productDb.variants.find(
-          (v) => v.color.toLowerCase() === variantColor.toLowerCase()
-        );
-
-        if (!variantDb) {
-            res.status(400);
-            throw new Error(`La variante ${variantColor} de ${productDb.name} no está disponible.`);
-        }
-
-        if (variantDb.stock < item.qty) {
-          res.status(400);
-          throw new Error(`Lo sentimos, ${productDb.name} - ${variantColor} se acaba de agotar (Quedan ${variantDb.stock}).`);
-        }
-
-      } else {
-        if (productDb.countInStock < item.qty) {
-          res.status(400);
-          throw new Error(`Lo sentimos, ${productDb.name} se acaba de agotar.`);
-        }
+      // Si el ID del producto es válido en la DB
+      if (item.product) {
+          const productDb = await Product.findById(item.product);
+          if (productDb) {
+            const variantColor = item.selectedVariant?.color || item.variant?.color;
+    
+            if (variantColor) {
+                const variantDb = productDb.variants.find(
+                  (v) => v.color.toLowerCase() === variantColor.toLowerCase()
+                );
+                // Si existe la variante, validamos stock (opcional para pedidos manuales, obligatorio para web)
+                if (variantDb && variantDb.stock < item.qty && orderSource === 'Web') {
+                   res.status(400);
+                   throw new Error(`Lo sentimos, ${productDb.name} - ${variantColor} se acaba de agotar.`);
+                }
+            } else {
+                if (productDb.countInStock < item.qty && orderSource === 'Web') {
+                  res.status(400);
+                  throw new Error(`Lo sentimos, ${productDb.name} se acaba de agotar.`);
+                }
+            }
+          }
       }
     }
     // ------------------------------------
@@ -62,14 +66,28 @@ const addOrderItems = asyncHandler(async (req, res) => {
         product: x.product,
         _id: undefined,
       })),
-      user: req.user?._id,
-      guestInfo,
+      user: req.user ? req.user._id : null, // Asocia al usuario logueado (Admin o Cliente)
+      
+      // Datos Estándar
       shippingAddress,
       paymentMethod,
       itemsPrice,
       taxPrice,
       shippingPrice,
       totalPrice,
+
+      // --- NUEVOS DATOS INTEGRADOS ---
+      guestInfo, 
+      isCustomOrder,
+      orderSource: orderSource || 'Web',
+      depositAmount: depositAmount || 0,
+      remainingAmount: remainingAmount || 0,
+      isPartiallyPaid: isPartiallyPaid || false,
+      workflowStatus: workflowStatus || 'Pendiente',
+      
+      // Manejo de pago manual
+      isPaid: isPaid || false,
+      paidAt: isPaid ? Date.now() : null
     });
 
     const createdOrder = await order.save();
@@ -196,9 +214,6 @@ const getMyOrders = asyncHandler(async (req, res) => {
   res.json(orders);
 });
 
-// @desc    Get all orders
-// @route   GET /api/orders
-// @access  Private/Admin
 // @desc    Obtener todas las ordenes (Admin)
 // @route   GET /api/orders
 // @access  Private/Admin
@@ -210,7 +225,6 @@ const getOrders = asyncHandler(async (req, res) => {
     
   res.json(orders);
 });
-// ... imports anteriores ...
 
 // @desc    Borrar orden y REVERTIR STOCK (Devolución)
 // @route   DELETE /api/orders/:id
@@ -220,22 +234,24 @@ const deleteOrder = asyncHandler(async (req, res) => {
 
   if (order) {
     // 1. REVERTIR STOCK (Magia aquí 🪄)
-    // Solo revertimos si la orden no había sido cancelada antes para evitar duplicidad
     for (const item of order.orderItems) {
-      const product = await Product.findById(item.product);
-      
-      if (product) {
-        if (item.variant && item.variant.color) {
-          // A) Devolver a variante
-          const variant = product.variants.find(v => v.color === item.variant.color);
-          if (variant) {
-            variant.stock += item.qty; // SUMAMOS de vuelta
+      // Solo intentamos revertir si hay un producto asociado
+      if(item.product) {
+          const product = await Product.findById(item.product);
+          
+          if (product) {
+            if (item.variant && item.variant.color) {
+              // A) Devolver a variante
+              const variant = product.variants.find(v => v.color === item.variant.color);
+              if (variant) {
+                variant.stock += item.qty; // SUMAMOS de vuelta
+              }
+            } else {
+              // B) Devolver a producto simple
+              product.countInStock += item.qty; // SUMAMOS de vuelta
+            }
+            await product.save();
           }
-        } else {
-          // B) Devolver a producto simple
-          product.countInStock += item.qty; // SUMAMOS de vuelta
-        }
-        await product.save();
       }
     }
 
@@ -248,11 +264,9 @@ const deleteOrder = asyncHandler(async (req, res) => {
   }
 });
 
-// ¡AGREGA deleteOrder AL EXPORT FINAL!
-
 export {
   addOrderItems,
-  addPosOrder, // <--- EXPORTADA
+  addPosOrder,
   getOrderById,
   updateOrderToPaid,
   updateOrderToDelivered,
