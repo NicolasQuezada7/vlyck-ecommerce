@@ -1,12 +1,14 @@
 import { useEffect } from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+// ✅ CORRECCIÓN 1: Importar BrowserRouter
+import { BrowserRouter, Routes, Route, useNavigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
+import ScrollToTop from './components/ScrollToTop';
 
 // --- COMPONENTES GLOBALES ---
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-import AdminLayout from './components/AdminLayout';
+import AdminLayout from './components/AdminLayout'; // El layout del Dashboard
 
 // --- PÁGINAS PÚBLICAS ---
 import HomePage from './pages/HomePage';
@@ -19,18 +21,20 @@ import ProfilePage from './pages/ProfilePage';
 import PaymentSuccess from './pages/PaymentSuccess';
 import OrderSuccessPage from './pages/OrderSuccessPage';
 import CustomizerPage from './pages/CustomizerPage';
+import AboutPage from './pages/AboutPage';
 
 // --- PÁGINAS ADMIN (CARPETA /admin) ---
 import DashboardPage from './pages/admin/DashboardPage';
 import PosPage from './pages/admin/PosPage';
 import FinancePage from './pages/admin/FinancePage';
 import CustomManagerPage from './pages/admin/CustomManagerPage';
+import UserListPage from './pages/admin/UserListPage';
+
 // --- PÁGINAS ADMIN (CARPETA RAÍZ /pages) ---
-// (Estas dijiste que NO están en la carpeta admin)
 import ProductListPage from './pages/ProductListPage';
 import ProductEditPage from './pages/ProductEditPage';
 
-// Componente interno para manejar inactividad
+// --- COMPONENTE INTERNO: MANEJO DE INACTIVIDAD ---
 function InactivityHandler() {
   const { userInfo, logout } = useAuth();
   const navigate = useNavigate();
@@ -67,52 +71,75 @@ function InactivityHandler() {
   return null;
 }
 
+// --- LAYOUT PÚBLICO (Para que el Navbar no salga en el Admin) ---
+const PublicLayout = () => {
+  return (
+    <div className="min-h-screen bg-[#050505] text-white font-sans flex flex-col">
+      <Navbar />
+      <main className="flex-grow w-full">
+        <Outlet /> {/* Aquí se renderizan las páginas hijas */}
+      </main>
+      <Footer />
+    </div>
+  );
+};
+
 function App() {
   return (
-    <AuthProvider>
-      <CartProvider>
-        <InactivityHandler />
+    // ✅ CORRECCIÓN 2: BrowserRouter envuelve TODO
+    <BrowserRouter>
+      {/* ✅ CORRECCIÓN 3: ScrollToTop va aquí adentro */}
+      <ScrollToTop />
+      
+      <AuthProvider>
+        <CartProvider>
+          <InactivityHandler />
 
-        <div className="min-h-screen bg-[#050505] text-white font-sans flex flex-col">
-          {/* Navbar Global (Visible en todas partes) */}
-          <Navbar />
-          
-          <main className="flex-grow w-full">
-            <Routes>
-              {/* --- RUTAS PÚBLICAS --- */}
+          <Routes>
+            {/* ------------------------------- */}
+            {/* GRUPO 1: RUTAS PÚBLICAS (Con Navbar y Footer) */}
+            {/* ------------------------------- */}
+            <Route element={<PublicLayout />}>
               <Route path="/" element={<HomePage />} />
               <Route path="/all" element={<CatalogPage />} />
+              <Route path="/products" element={<CatalogPage />} /> {/* Alias por si acaso */}
               <Route path="/product/:slug" element={<ProductPage />} />
               <Route path="/cart" element={<CartPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/payment-success" element={<PaymentSuccess />} />
               <Route path="/order/:id" element={<OrderSuccessPage />} />
               <Route path="/customizer" element={<CustomizerPage />} />
+              <Route path="/about" element={<AboutPage />} />
               
-              {/* --- AUTENTICACIÓN --- */}
+              {/* Login/Register pueden ir aquí o separados si quieres sin Navbar */}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+            </Route>
 
-              {/* Redirección inteligente para /admin */}
-              <Route path="/admin" element={<LoginPage />} />
+            {/* ------------------------------- */}
+            {/* GRUPO 2: RUTAS ADMIN (Con Sidebar propio) */}
+            {/* ------------------------------- */}
+            
+            {/* Redirección básica si alguien entra a /admin */}
+            <Route path="/admin" element={<LoginPage />} />
 
-              {/* --- RUTAS PROTEGIDAS (ADMIN) --- */}
-              <Route element={<AdminLayout />}>
-                <Route path="/admin/dashboard" element={<DashboardPage />} />
-                <Route path="/admin/pos" element={<PosPage />} />
-                <Route path="/admin/finance" element={<FinancePage />} />
-                <Route path="/admin/custom-orders" element={<CustomManagerPage />} />  
-                {/* Estas rutas usan los archivos que están en /pages raíz */}
-                <Route path="/admin/productlist" element={<ProductListPage />} />
-                <Route path="/admin/product/:id/edit" element={<ProductEditPage />} />
-              </Route>
-            </Routes>
-          </main>
-          
-          <Footer />
-        </div>
-      </CartProvider>
-    </AuthProvider>
+            <Route element={<AdminLayout />}>
+              <Route path="/admin/dashboard" element={<DashboardPage />} />
+              <Route path="/admin/pos" element={<PosPage />} />
+              <Route path="/admin/finance" element={<FinancePage />} />
+              <Route path="/admin/custom-orders" element={<CustomManagerPage />} />
+              <Route path="/admin/users" element={<UserListPage />} />
+              
+              {/* Rutas de Productos (Según tu estructura de carpetas actual) */}
+              <Route path="/admin/productlist" element={<ProductListPage />} />
+              <Route path="/admin/product/:id/edit" element={<ProductEditPage />} />
+            </Route>
+
+          </Routes>
+
+        </CartProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 

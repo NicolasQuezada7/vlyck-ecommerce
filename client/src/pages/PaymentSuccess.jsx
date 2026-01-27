@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -9,110 +9,106 @@ export default function PaymentSuccess() {
   const navigate = useNavigate();
   const { cart, clearCart, totalPrice } = useCart();
   const { userInfo } = useAuth();
+  
+  // Ref para evitar que React ejecute esto 2 veces (común en modo estricto)
+  const processedRef = useRef(false);
 
   useEffect(() => {
     const processOrder = async () => {
+      // Si ya procesamos o no hay usuario, detenemos
+      if (processedRef.current || !userInfo) return;
+
       const queryParams = new URLSearchParams(location.search);
       const status = queryParams.get('status');
       const paymentId = queryParams.get('payment_id');
 
-      // Solo procesamos si hay status approved y items en el carrito
-      if (status === 'approved' && cart.length > 0) {
-        try {
-          // 1. RECUPERAR DIRECCIÓN (Con datos de relleno por si falla el localStorage)
-          const savedAddress = JSON.parse(localStorage.getItem('shippingAddress') || '{}');
-          
-          const finalAddress = {
-            address: savedAddress.address || "Dirección no especificada",
-            city: savedAddress.city || "Ciudad no especificada",
-            region: savedAddress.region || "Región Metropolitana",
-            postalCode: savedAddress.postalCode || "0000000",
-            country: "Chile"
-          };
+      // 1. Validaciones
+      if (status !== 'approved') {
+          navigate('/cart'); 
+          return;
+      }
+      if (cart.length === 0) {
+          // Si llega aquí con carrito vacío, probablemente recargó la página
+          // Redirigir a "Mis Pedidos" o Home para evitar errores
+          navigate('/profile'); 
+          return;
+      }
 
-          // 2. TRADUCIR EL CARRITO (Mapping)
-          // Convertimos las variables de tu CartContext a las que pide Mongoose
-          const finalOrderItems = cart.map(item => ({
-            product: item.productId || item._id || item.id, // Intentamos varios nombres de ID
-            name: item.name,
-            image: item.imageUrl,   // Tu Context usa imageUrl, la BD quiere image
-            price: item.basePrice,  // Tu Context usa basePrice, la BD quiere price
-            qty: item.quantity,     // Tu Context usa quantity, la BD quiere qty
-            variant: item.selectedVariant || {} // Pasamos la variante si existe
-          }));
+      // Marcar como procesando para evitar duplicados
+      processedRef.current = true;
 
-          // 3. ARMAR EL OBJETO FINAL
-          const orderData = {
-            orderItems: finalOrderItems,
-            shippingAddress: finalAddress,
-            paymentMethod: 'MercadoPago',
-            paymentResult: {
-              id: paymentId,
-              status: status,
-              email: queryParams.get('payer_email') || userInfo?.email || "email@desconocido.com",
-            },
-            itemsPrice: totalPrice,
-            shippingPrice: 0,
-            totalPrice: totalPrice,
-            isPaid: true,
-            paidAt: Date.now(),
-            // IMPORTANTE: Mongoose pide guestInfo obligatoriamente (según tu error)
-            // Así que rellenamos con los datos del usuario logueado
-            guestInfo: {
-                name: userInfo?.name || "Cliente",
-                email: userInfo?.email || "cliente@email.com"
-            }
-          };
+      try {
+        // 2. Recuperar Dirección (con Fallback por seguridad)
+        const savedAddress = JSON.parse(localStorage.getItem('shippingAddress') || '{}');
+        const finalAddress = {
+          address: savedAddress.address || "Dirección Web",
+          city: savedAddress.city || "Chillán",
+          region: savedAddress.region || "Ñuble",
+          postalCode: savedAddress.postalCode || "0000000",
+          country: "Chile"
+        };
 
-          const config = {
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${userInfo.token}`,
-            },
-          };
+        // 3. Formatear Items para el Backend
+        const finalOrderItems = cart.map(item => ({
+          product: item.productId || item._id || item.id,
+          name: item.name,
+          image: item.imageUrl,
+          price: Number(item.basePrice),
+          qty: Number(item.quantity),
+          variant: item.selectedVariant || {}
+        }));
 
-          console.log("Enviando orden al backend:", orderData); // Para depurar si falla
+        const orderData = {
+          orderItems: finalOrderItems,
+          shippingAddress: finalAddress,
+          paymentMethod: 'MercadoPago',
+          paymentResult: {
+            id: paymentId,
+            status: status,
+            email: queryParams.get('payer_email') || userInfo.email,
+            update_time: new Date().toISOString()
+          },
+          itemsPrice: totalPrice,
+          shippingPrice: 0,
+          totalPrice: totalPrice,
+          isPaid: true,
+          paidAt: Date.now(),
+          // Rellenar guestInfo aunque sea usuario registrado para cumplir con el Modelo
+          guestInfo: {
+              name: userInfo.name,
+              email: userInfo.email
+          }
+        };
 
-          // 4. ENVIAR AL BACKEND
-          const { data } = await axios.post(
-            `/api/orders`,
-            orderData,
-            config
-          );
+        const config = {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${userInfo.token}`,
+          },
+        };
 
-          // 5. ÉXITO
-          clearCart();
-          navigate(`/order/${data._id}`);
+        // 4. Guardar en Base de Datos
+        const { data } = await axios.post('/api/orders', orderData, config);
 
-        } catch (error) {
-          console.error("Error al guardar la orden:", error);
-          console.error("Detalle del error:", error.response?.data); // Muestra qué campo falló
-          alert("Hubo un problema guardando tu orden. Por favor contáctanos con tu comprobante de pago.");
-          navigate('/');
-        }
-      } else if (status !== 'approved') {
-         // Si Mercado Pago devolvió 'rejected' o 'pending'
-         navigate('/cart');
+        // 5. Limpiar y Redirigir
+        clearCart();
+        navigate(`/order/${data._id}`);
+
+      } catch (error) {
+        console.error("Error procesando orden:", error);
+        alert("Hubo un error guardando tu pedido. Contáctanos con tu comprobante.");
+        // No limpiamos el carrito por si quiere reintentar
       }
     };
 
-    // Ejecutar lógica
-    if (cart.length > 0) {
-        processOrder();
-    } else {
-        // Si el carrito está vacío (recargó página), intentamos ver si era una prueba manual
-        const queryParams = new URLSearchParams(location.search);
-        if(!queryParams.get('status')) {
-            navigate('/');
-        }
-    }
+    processOrder();
   }, [location, navigate, cart, clearCart, userInfo, totalPrice]);
 
   return (
-    <div className="min-h-screen bg-background-dark flex flex-col items-center justify-center text-white">
-      <span className="material-symbols-outlined text-6xl animate-spin text-vlyck-cyan mb-4">autorenew</span>
-      <h2 className="text-2xl font-bold">Guardando tu pedido...</h2>
-      <p className="text-gray-400">Por favor espera un momento.</p>
+    <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white p-4 text-center">
+      <span className="material-symbols-outlined text-6xl animate-spin text-vlyck-lime mb-6">autorenew</span>
+      <h2 className="text-2xl font-black uppercase tracking-tight mb-2">Procesando Pago...</h2>
+      <p className="text-gray-400 font-mono text-sm">Estamos confirmando tu transacción con Mercado Pago.</p>
     </div>
   );
 }

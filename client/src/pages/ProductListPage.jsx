@@ -3,22 +3,32 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 
+// --- CONSTANTES ---
 const BRANDS = ["Todas", "Apple", "Samsung", "Huawei", "Redmi", "Xiaomi", "Motorola", "Vivo", "Oppo", "Honor", "Genericos"];
-const CATEGORIES = ["Todas", "MagFrame", "MagSafe Clear", "Clear Protect", "Personalizadas", "Accesorios"];
+const CATEGORIES = ["Todas", "MagFrame", "MagSafe Clear", "Clear Protect", "Personalizadas", "Accesorios", "Láminas", "Colorful", "Transparente MagSafe"];
+const PRESET_COLORS = ["Todos", "Negro", "Blanco", "Rosado", "Naranja", "Burdeo", "Azul", "Verde", "Transparente", "Rojo", "Lila"];
 
 export default function ProductListPage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
+  
   // Estados para Filtros
   const [searchTerm, setSearchTerm] = useState('');
   const [filterBrand, setFilterBrand] = useState('Todas');
   const [filterCategory, setFilterCategory] = useState('Todas');
+  const [filterColor, setFilterColor] = useState('Todos');
 
-  // Estados de carga
-  const [loadingDelete, setLoadingDelete] = useState(false);
-  const [loadingCreate, setLoadingCreate] = useState(false);
+  // Paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // Estados de carga y feedback
+  const [processing, setProcessing] = useState(false);
+  const [toast, setToast] = useState({ show: false, msg: '', type: 'success' });
+
+  // --- NUEVO: ESTADOS PARA MODAL DE ELIMINAR ---
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
 
   const { userInfo } = useAuth();
   const navigate = useNavigate();
@@ -27,68 +37,76 @@ export default function ProductListPage() {
     if (userInfo && userInfo.isAdmin) {
       fetchProducts();
     } else {
-      navigate('/admin');
+      navigate('/login');
     }
   }, [userInfo, navigate]);
+
+  // Resetear a pág 1 si cambian los filtros
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, filterBrand, filterCategory, filterColor]);
+
+  // --- HELPER NOTIFICACIONES ---
+  const showToastMsg = (msg, type = 'success') => {
+    setToast({ show: true, msg, type });
+    setTimeout(() => setToast({ ...toast, show: false }), 3000);
+  };
 
   const fetchProducts = async () => {
     try {
       const { data } = await axios.get(`/api/products`);
-      setProducts(data);
+      // ORDENAR: El más nuevo primero (descendente por fecha)
+      const sortedData = data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      setProducts(sortedData);
       setLoading(false);
     } catch (err) {
-      setError('Error cargando productos');
+      showToastMsg('Error cargando inventario', 'error');
       setLoading(false);
     }
   };
 
-  // --- FUNCIÓN DE IMAGEN MEJORADA (BÚSQUEDA PROFUNDA) ---
+  // --- OBTENER IMAGEN ---
   const getProductImg = (prod) => {
-    // 1. Prioridad: Imagen de Portada Nueva
     if (prod.images && prod.images.length > 0) return prod.images[0];
-    
-    // 2. Prioridad: Imagen de Portada Vieja
     if (prod.imageUrl) return prod.imageUrl;
-
-    // 3. Prioridad: Buscar en CUALQUIER variante (no solo la primera)
     if (prod.variants && prod.variants.length > 0) {
-        // Buscamos la primera variante que tenga al menos una imagen
         const variantWithImage = prod.variants.find(v => v.images && v.images.length > 0);
-        
-        if (variantWithImage) {
-            return variantWithImage.images[0];
-        }
+        if (variantWithImage) return variantWithImage.images[0];
     }
-
-    // 4. Fallback final
     return "https://via.placeholder.com/150?text=Sin+Foto";
   };
 
-  const deleteHandler = async (id) => {
-    if (window.confirm('¿Estás seguro de borrar este producto?')) {
-      setLoadingDelete(true);
-      try {
-        const config = { headers: { Authorization: `Bearer ${userInfo.token}` } };
-        await axios.delete(`/api/products/${id}`, config);
-        fetchProducts();
-        setLoadingDelete(false);
-      } catch (error) {
-        alert('Error borrando producto');
-        setLoadingDelete(false);
-      }
+  // --- LÓGICA ELIMINAR (MODIFICADA) ---
+  const openDeleteModal = (id) => {
+      setProductToDelete(id);
+      setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!productToDelete) return;
+    
+    setProcessing(true); // Usamos loadingDelete visualmente
+    try {
+      const config = { headers: { Authorization: `Bearer ${userInfo.token}` } };
+      await axios.delete(`/api/products/${productToDelete}`, config);
+      
+      showToastMsg('Producto eliminado correctamente');
+      setShowDeleteModal(false);
+      setProductToDelete(null);
+      fetchProducts();
+    } catch (error) {
+      showToastMsg('Error al eliminar producto', 'error');
     }
+    setProcessing(false);
   };
 
   const createProductHandler = async () => {
-    setLoadingCreate(true);
+    setProcessing(true);
     try {
       const config = { headers: { Authorization: `Bearer ${userInfo.token}` } };
       const { data: createdProduct } = await axios.post(`/api/products`, {}, config);
       navigate(`/admin/product/${createdProduct._id}/edit`);
     } catch (error) {
-      console.error(error);
-      alert('Error al crear producto');
-      setLoadingCreate(false);
+      showToastMsg('Error al inicializar producto', 'error');
+      setProcessing(false);
     }
   };
 
@@ -97,30 +115,45 @@ export default function ProductListPage() {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesBrand = filterBrand === 'Todas' || product.brand === filterBrand;
     const matchesCategory = filterCategory === 'Todas' || product.category === filterCategory;
+    
+    let matchesColor = true;
+    if (filterColor !== 'Todos') {
+        const hasVariantColor = product.variants?.some(v => v.color === filterColor);
+        const hasRootColor = product.color === filterColor; 
+        matchesColor = hasVariantColor || hasRootColor;
+    }
 
-    return matchesSearch && matchesBrand && matchesCategory;
+    return matchesSearch && matchesBrand && matchesCategory && matchesColor;
   });
 
-  if (loading) return <div className="text-white pt-32 text-center">Cargando inventario...</div>;
+  // Índices Paginación
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredProducts.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+  if (loading) return <div className="text-vlyck-lime pt-32 text-center animate-pulse">Cargando inventario...</div>;
 
   return (
-    <div className="pt-14 pb-20 px-4 max-w-[1440px] mx-auto">
+    <div className="pt-4 pb-20 px-4 max-w-[1440px] mx-auto font-sans relative">
       
-      {/* Cabecera y Botón de Crear */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+      {/* CABECERA */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-white">Inventario</h2>
-          <p className="text-gray-500 text-sm">Gestiona tu catálogo ({products.length} productos)</p>
+          <h2 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight">Inventario</h2>
+          <p className="text-gray-500 text-xs md:text-sm font-bold uppercase tracking-widest">
+            {filteredProducts.length} productos • Ordenados por fecha
+          </p>
         </div>
 
         <button
           onClick={createProductHandler}
-          disabled={loadingCreate}
-          className="flex items-center gap-2 px-6 py-3 bg-vlyck-gradient text-black font-bold rounded-full hover:scale-105 transition-transform shadow-[0_0_20px_rgba(167,255,45,0.3)] disabled:opacity-50"
+          disabled={processing}
+          className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-vlyck-lime text-black font-black uppercase text-sm rounded-xl hover:scale-105 transition-transform shadow-[0_0_20px_rgba(167,255,45,0.3)] disabled:opacity-50"
         >
-          {loadingCreate ? (
-            <span>Creando...</span>
-          ) : (
+          {processing ? 'Procesando...' : (
             <>
               <span className="material-symbols-outlined text-[20px]">add_circle</span>
               Crear Producto
@@ -129,98 +162,191 @@ export default function ProductListPage() {
         </button>
       </div>
 
-      {/* --- BARRA DE HERRAMIENTAS --- */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8 bg-[#111] p-4 rounded-2xl border border-white/10">
-        <div className="md:col-span-2 relative">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">search</span>
-          <input
-            type="text"
-            placeholder="Buscar producto..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-black/40 border border-white/10 rounded-xl py-2 pl-10 pr-4 text-white focus:border-vlyck-lime outline-none"
-          />
-        </div>
+      {/* --- BARRA DE FILTROS --- */}
+      <div className="bg-[#111] p-4 rounded-2xl border border-white/10 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            {/* Buscador */}
+            <div className="relative">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">search</span>
+                <input
+                    type="text"
+                    placeholder="Buscar nombre..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full bg-black/40 border border-white/10 rounded-lg py-3 pl-10 pr-4 text-white text-xs focus:border-vlyck-lime outline-none transition-colors"
+                />
+            </div>
 
-        <div className="relative">
-          <select value={filterBrand} onChange={(e) => setFilterBrand(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl py-2 px-4 text-white appearance-none cursor-pointer focus:border-vlyck-lime outline-none">
-            {BRANDS.map(brand => <option key={brand} value={brand} className="bg-[#111]">{brand}</option>)}
-          </select>
-          <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none text-sm">expand_more</span>
-        </div>
+            {/* Marca */}
+            <div className="relative">
+                <select value={filterBrand} onChange={(e) => setFilterBrand(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg py-3 px-4 text-white text-xs appearance-none cursor-pointer focus:border-vlyck-lime outline-none">
+                    {BRANDS.map(b => <option key={b} value={b} className="bg-[#111]">{b}</option>)}
+                </select>
+                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none text-sm">expand_more</span>
+            </div>
 
-        <div className="relative">
-          <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl py-2 px-4 text-white appearance-none cursor-pointer focus:border-vlyck-lime outline-none">
-            {CATEGORIES.map(cat => <option key={cat} value={cat} className="bg-[#111]">{cat}</option>)}
-          </select>
-          <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none text-sm">expand_more</span>
-        </div>
+            {/* Categoría */}
+            <div className="relative">
+                <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg py-3 px-4 text-white text-xs appearance-none cursor-pointer focus:border-vlyck-lime outline-none">
+                    {CATEGORIES.map(c => <option key={c} value={c} className="bg-[#111]">{c}</option>)}
+                </select>
+                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none text-sm">expand_more</span>
+            </div>
+
+            {/* Color */}
+            <div className="relative">
+                <select value={filterColor} onChange={(e) => setFilterColor(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg py-3 px-4 text-white text-xs appearance-none cursor-pointer focus:border-vlyck-lime outline-none">
+                    {PRESET_COLORS.map(c => <option key={c} value={c} className="bg-[#111]">{c === 'Todos' ? 'Todos los Colores' : c}</option>)}
+                </select>
+                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none text-sm">palette</span>
+            </div>
+          </div>
       </div>
 
-      {error && <div className="bg-red-500/10 text-red-500 p-4 rounded mb-4">{error}</div>}
+      {/* --- VISTA MÓVIL (CARDS) --- */}
+      <div className="grid grid-cols-1 gap-4 md:hidden mb-8">
+        {currentItems.map(product => (
+            <div key={product._id} className="bg-[#111] border border-white/10 rounded-xl p-4 flex gap-4 items-center shadow-lg relative overflow-hidden group">
+                <div className="w-20 h-20 bg-black rounded-lg shrink-0 border border-white/5 flex items-center justify-center overflow-hidden">
+                    <img src={getProductImg(product)} alt={product.name} className="w-full h-full object-cover" onError={(e) => { e.target.src = "https://via.placeholder.com/150?text=Error" }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-start">
+                        <h3 className="text-white font-bold text-sm truncate pr-2">{product.name}</h3>
+                        <span className="text-xs text-vlyck-lime font-mono font-bold">${product.basePrice.toLocaleString('es-CL')}</span>
+                    </div>
+                    <p className="text-[10px] text-gray-500 uppercase mt-1">{product.brand} • {product.category}</p>
+                    <div className="flex items-center justify-between mt-2">
+                        <p className={`text-[10px] font-bold ${product.countInStock > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                            {product.countInStock > 0 ? `Stock: ${product.countInStock}` : 'AGOTADO'}
+                        </p>
+                        <span className="text-[9px] text-gray-600 font-mono">{new Date(product.createdAt).toLocaleDateString()}</span>
+                    </div>
+                </div>
+                <div className="flex flex-col gap-2 pl-2 border-l border-white/10">
+                    <Link to={`/admin/product/${product._id}/edit`} className="w-8 h-8 rounded-full bg-white/5 text-blue-400 flex items-center justify-center hover:bg-white/10">
+                        <span className="material-symbols-outlined text-sm">edit</span>
+                    </Link>
+                    {/* Botón llama al Modal */}
+                    <button onClick={() => openDeleteModal(product._id)} className="w-8 h-8 rounded-full bg-white/5 text-red-500 flex items-center justify-center hover:bg-white/10">
+                        <span className="material-symbols-outlined text-sm">delete</span>
+                    </button>
+                </div>
+            </div>
+        ))}
+      </div>
 
-      {/* Tabla Detallada */}
-      <div className="w-full bg-[#111] rounded-2xl border border-white/10 overflow-hidden shadow-xl mb-20">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+      {/* --- VISTA DESKTOP (TABLA) --- */}
+      <div className="hidden md:block w-full bg-[#111] rounded-2xl border border-white/10 overflow-hidden shadow-xl mb-8">
+        <table className="w-full text-left border-collapse">
             <thead className="bg-white/5 text-gray-500 text-[10px] uppercase tracking-widest font-semibold border-b border-white/5">
               <tr>
                 <th className="px-6 py-4">Imagen</th>
                 <th className="px-6 py-4">Nombre</th>
                 <th className="px-6 py-4">Precio</th>
-                <th className="px-6 py-4">Categoría</th>
-                <th className="px-6 py-4">Marca</th>
+                <th className="px-6 py-4">Detalles</th>
+                <th className="px-6 py-4">Stock</th>
+                <th className="px-6 py-4">Fecha</th>
                 <th className="px-6 py-4 text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {filteredProducts.map((product) => (
+              {currentItems.map((product) => (
                 <tr key={product._id} className="group hover:bg-white/5 transition-colors">
-
-                  {/* Columna Imagen */}
                   <td className="px-6 py-4">
-                    <div className="w-12 h-12 rounded-lg border border-white/10 overflow-hidden bg-white/5 flex items-center justify-center">
-                      <img 
-                        src={getProductImg(product)} 
-                        alt={product.name} 
-                        className="w-full h-full object-cover"
-                        // Si la imagen falla, ponemos placeholder
-                        onError={(e) => { e.target.src = "https://via.placeholder.com/150?text=Error" }}
-                      />
+                    <div className="w-10 h-10 rounded-lg border border-white/10 overflow-hidden bg-white/5 flex items-center justify-center">
+                      <img src={getProductImg(product)} alt={product.name} className="w-full h-full object-cover" onError={(e) => { e.target.src = "https://via.placeholder.com/150?text=Error" }} />
                     </div>
                   </td>
-
-                  <td className="px-6 py-4 font-medium text-white">{product.name}</td>
-                  <td className="px-6 py-4 text-vlyck-lime font-mono">${product.basePrice.toLocaleString('es-CL')}</td>
+                  <td className="px-6 py-4 font-medium text-white text-sm">{product.name}</td>
+                  <td className="px-6 py-4 text-vlyck-lime font-mono text-sm">${product.basePrice.toLocaleString('es-CL')}</td>
                   <td className="px-6 py-4">
-                    <span className="px-2 py-1 rounded-md bg-white/5 text-xs text-gray-300 border border-white/10">
-                      {product.category}
-                    </span>
+                    <div className="flex flex-col">
+                        <span className="text-[10px] text-gray-300 uppercase">{product.brand}</span>
+                        <span className="text-[9px] text-gray-500">{product.category}</span>
+                    </div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-400">{product.brand}</td>
-
-                  <td className="px-6 py-4 text-right flex justify-end gap-2 items-center h-full pt-6">
-                    <Link to={`/admin/product/${product._id}/edit`} className="p-2 rounded-lg bg-white/5 text-white hover:bg-vlyck-cyan hover:text-black transition-all" title="Editar">
-                      <span className="material-symbols-outlined text-[18px]">edit</span>
-                    </Link>
-                    <button onClick={() => deleteHandler(product._id)} disabled={loadingDelete} className="p-2 rounded-lg bg-white/5 text-red-400 hover:bg-red-500 hover:text-white transition-all" title="Eliminar">
-                      <span className="material-symbols-outlined text-[18px]">delete</span>
-                    </button>
+                  <td className="px-6 py-4 text-xs font-bold text-gray-400">{product.countInStock}</td>
+                  <td className="px-6 py-4 text-xs text-gray-500 font-mono">{new Date(product.createdAt).toLocaleDateString()}</td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex justify-end gap-2 opacity-50 group-hover:opacity-100 transition-opacity">
+                        <Link to={`/admin/product/${product._id}/edit`} className="p-2 rounded-lg bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 transition-all">
+                            <span className="material-symbols-outlined text-[18px]">edit</span>
+                        </Link>
+                        {/* Botón llama al Modal */}
+                        <button onClick={() => openDeleteModal(product._id)} className="p-2 rounded-lg bg-white/5 text-gray-400 hover:text-red-500 hover:bg-red-500/10 transition-all">
+                            <span className="material-symbols-outlined text-[18px]">delete</span>
+                        </button>
+                    </div>
                   </td>
                 </tr>
               ))}
-
-              {filteredProducts.length === 0 && (
-                <tr>
-                  <td colSpan="6" className="text-center py-10 text-gray-500">
-                    {searchTerm ? 'No se encontraron productos.' : 'No hay productos en inventario.'}
-                  </td>
-                </tr>
-              )}
             </tbody>
-          </table>
-        </div>
+        </table>
       </div>
+
+      {/* --- ESTADO VACÍO --- */}
+      {filteredProducts.length === 0 && (
+        <div className="text-center py-20 text-gray-500 bg-[#111] rounded-2xl border border-white/10 border-dashed">
+            <span className="material-symbols-outlined text-4xl mb-2 opacity-30">inventory_2</span>
+            <p>{searchTerm ? 'No se encontraron productos.' : 'Inventario vacío.'}</p>
+        </div>
+      )}
+
+      {/* --- PAGINACIÓN --- */}
+      {filteredProducts.length > itemsPerPage && (
+          <div className="flex justify-center md:justify-end gap-2 mt-4">
+              <button onClick={() => paginate(Math.max(1, currentPage - 1))} disabled={currentPage === 1} className="w-10 h-10 rounded-lg flex items-center justify-center bg-[#111] border border-white/10 text-white disabled:opacity-30 hover:border-vlyck-lime"><span className="material-symbols-outlined text-sm">chevron_left</span></button>
+              <div className="flex items-center px-4 bg-[#111] border border-white/10 rounded-lg text-xs font-bold text-gray-400">
+                  Página {currentPage} / {totalPages}
+              </div>
+              <button onClick={() => paginate(Math.min(totalPages, currentPage + 1))} disabled={currentPage === totalPages} className="w-10 h-10 rounded-lg flex items-center justify-center bg-[#111] border border-white/10 text-white disabled:opacity-30 hover:border-vlyck-lime"><span className="material-symbols-outlined text-sm">chevron_right</span></button>
+          </div>
+      )}
+
+      {/* --- MODAL CONFIRMACIÓN BORRAR --- */}
+      {showDeleteModal && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-[#111] border border-red-500/30 rounded-2xl w-full max-w-sm p-6 shadow-2xl animate-bounce-in relative">
+                  <div className="flex flex-col items-center text-center">
+                      <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center mb-4">
+                          <span className="material-symbols-outlined text-red-500 text-2xl">warning</span>
+                      </div>
+                      <h3 className="text-lg font-bold text-white mb-2">¿Eliminar Producto?</h3>
+                      <p className="text-xs text-gray-400 mb-6">
+                          Esta acción borrará el producto del inventario permanentemente. No se puede deshacer.
+                      </p>
+                      
+                      <div className="flex gap-3 w-full">
+                          <button 
+                              onClick={() => { setShowDeleteModal(false); setProductToDelete(null); }} 
+                              className="flex-1 py-3 rounded-xl border border-white/10 text-gray-300 font-bold hover:bg-white/5 transition-colors text-xs uppercase"
+                          >
+                              Cancelar
+                          </button>
+                          <button 
+                              onClick={confirmDelete}
+                              disabled={processing}
+                              className="flex-1 py-3 rounded-xl bg-red-500 text-white font-bold hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20 text-xs uppercase disabled:opacity-50"
+                          >
+                              {processing ? 'Borrando...' : 'Sí, Eliminar'}
+                          </button>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* --- TOAST --- */}
+      {toast.show && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] animate-bounce-in">
+            <div className={`px-6 py-3 rounded-full border flex items-center gap-3 backdrop-blur-md shadow-2xl ${toast.type === 'error' ? 'bg-red-500/10 border-red-500 text-red-500' : 'bg-vlyck-lime/10 border-vlyck-lime text-vlyck-lime'}`}>
+                <span className="material-symbols-outlined">{toast.type === 'error' ? 'error' : 'check_circle'}</span>
+                <span className="font-bold text-sm uppercase">{toast.msg}</span>
+            </div>
+        </div>
+      )}
+
     </div>
   );
 }

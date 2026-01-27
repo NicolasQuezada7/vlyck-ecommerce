@@ -170,9 +170,7 @@ export default function FinancePage() {
       })),
       
       // 2. INGRESOS (Solo Ventas PAGADAS)
-      // ✅ CAMBIO 1: Agregado .filter(o => o.isPaid)
       ...orders.filter(o => o.isPaid).map(o => { 
-          // Generar lista de productos
           const productList = o.orderItems.map(item => `${item.qty}x ${item.name}`).join(', ');
           
           return {
@@ -218,82 +216,97 @@ export default function FinancePage() {
   const profit = totalIncome - totalExpensesCalc;
 
   return (
-    <div className="flex h-screen bg-[#050505] text-white font-sans overflow-hidden">
+    <div className="flex flex-col md:flex-row min-h-screen bg-[#050505] text-white font-sans overflow-x-hidden">
+      
       <style>{` ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #0d0d0d; } ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; } `}</style>
 
       {/* CONTENIDO PRINCIPAL */}
-      <main className="flex-1 flex flex-col h-full overflow-hidden relative z-0">
-        <header className="border-b border-white/5 bg-[#050505]/50 backdrop-blur pt-8 px-8 shrink-0 flex flex-col gap-6">
-           <div className="flex justify-between items-center">
+      <main className="flex-1 flex flex-col h-full w-full">
+        <header className="border-b border-white/5 bg-[#050505]/50 backdrop-blur pt-6 md:pt-8 px-4 md:px-8 shrink-0 flex flex-col gap-6">
+           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-vlyck-lime rounded-xl flex items-center justify-center">
-                        <span className="material-symbols-outlined text-black font-bold text-xl">diamond</span>
+                    <div className="w-10 h-10 bg-vlyck-lime rounded-xl flex items-center justify-center shadow-lg shadow-vlyck-lime/20">
+                        <span className="material-symbols-outlined text-black font-bold text-xl">payments</span>
                     </div>
                     <div>
-                        <h1 className="font-mono text-2xl font-bold tracking-tight text-white">CONTROL DE GASTOS</h1>
-                        <p className="text-xs text-gray-500 font-mono">Finanzas & Proveedores</p>
+                        <h1 className="font-mono text-xl md:text-2xl font-bold tracking-tight text-white">FINANZAS</h1>
+                        <p className="text-xs text-gray-500 font-mono">Control de Caja</p>
                     </div>
                </div>
-               <div className="flex items-center gap-3">
-                    <button onClick={() => { setEditingSupplierId(null); setSupplierForm({name:'', rut:'', contactName:'', category:'General'}); setShowSupplierModal(true); }} className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5 text-xs font-bold text-white flex items-center gap-2">
-                        <span className="material-symbols-outlined text-sm">group_add</span> Nuevo Proveedor
+               <div className="flex items-center gap-2 md:gap-3 w-full md:w-auto">
+                    <button onClick={() => { setEditingSupplierId(null); setSupplierForm({name:'', rut:'', contactName:'', category:'General'}); setShowSupplierModal(true); }} className="flex-1 md:flex-none px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5 text-xs font-bold text-white flex justify-center items-center gap-2">
+                        <span className="material-symbols-outlined text-sm">person_add</span> Proveedor
                     </button>
-                    <button onClick={() => { setEditingExpenseId(null); setExpenseForm({description:'', amount:'', category:'Insumos', supplier:'', attachments:[]}); setShowExpenseModal(true); }} className="px-4 py-2 rounded-lg bg-vlyck-lime text-black text-xs font-black hover:shadow-lg transition-all flex items-center gap-2">
-                        <span className="material-symbols-outlined text-sm font-bold">add</span> Registrar Gasto
+                    <button onClick={() => { setEditingExpenseId(null); setExpenseForm({description:'', amount:'', category:'Insumos', supplier:'', attachments:[]}); setShowExpenseModal(true); }} className="flex-1 md:flex-none px-4 py-2 rounded-lg bg-vlyck-lime text-black text-xs font-black hover:shadow-lg transition-all flex justify-center items-center gap-2">
+                        <span className="material-symbols-outlined text-sm font-bold">add</span> Gasto
                     </button>
                </div>
            </div>
 
-           {/* Tabs */}
-           <div className="flex items-center gap-6 text-sm font-medium">
-                <button onClick={() => setActiveTab('overview')} className={`pb-3 border-b-2 flex items-center gap-2 ${activeTab === 'overview' ? 'border-vlyck-lime text-white' : 'border-transparent text-gray-500'}`}>
-                    <span className="material-symbols-outlined text-lg">dashboard</span> Dashboard
+           {/* Tabs Movibles */}
+           <div className="flex items-center gap-6 text-sm font-medium overflow-x-auto hide-scrollbar pb-3">
+                <button onClick={() => setActiveTab('overview')} className={`whitespace-nowrap flex items-center gap-2 ${activeTab === 'overview' ? 'text-vlyck-lime font-bold' : 'text-gray-500'}`}>
+                    <span className="material-symbols-outlined text-lg">dashboard</span> Resumen
                 </button>
-                <button onClick={() => setActiveTab('transactions')} className={`pb-3 border-b-2 flex items-center gap-2 ${activeTab === 'transactions' ? 'border-vlyck-lime text-white' : 'border-transparent text-gray-500'}`}>
-                    <span className="material-symbols-outlined text-lg">receipt_long</span> Transacciones
+                <button onClick={() => setActiveTab('transactions')} className={`whitespace-nowrap flex items-center gap-2 ${activeTab === 'transactions' ? 'text-vlyck-lime font-bold' : 'text-gray-500'}`}>
+                    <span className="material-symbols-outlined text-lg">list_alt</span> Movimientos
                 </button>
-                <button onClick={() => setActiveTab('suppliers')} className={`pb-3 border-b-2 flex items-center gap-2 ${activeTab === 'suppliers' ? 'border-vlyck-lime text-white' : 'border-transparent text-gray-500'}`}>
-                    <span className="material-symbols-outlined text-lg">corporate_fare</span> Proveedores
+                <button onClick={() => setActiveTab('suppliers')} className={`whitespace-nowrap flex items-center gap-2 ${activeTab === 'suppliers' ? 'text-vlyck-lime font-bold' : 'text-gray-500'}`}>
+                    <span className="material-symbols-outlined text-lg">groups</span> Proveedores
                 </button>
            </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-8 scroll-smooth pb-32">
+        <div className="flex-1 p-4 md:p-8 pb-32">
            
            {/* VISTA 1: OVERVIEW */}
            {activeTab === 'overview' && (
-               <div className="animate-fade-in">
+               <div className="animate-fade-in space-y-8">
                    {/* KPI Cards */}
-                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
-                      <div className="bg-[#111] p-6 rounded-2xl border border-white/10"><p className="text-[10px] text-gray-500 font-bold mb-1">Utilidad Neta</p><h3 className={`text-3xl font-mono font-black ${profit >= 0 ? 'text-vlyck-lime' : 'text-red-500'}`}>$ {profit.toLocaleString()}</h3></div>
-                      <div className="bg-[#111] p-6 rounded-2xl border border-white/10"><p className="text-[10px] text-gray-500 font-bold mb-1">Ingresos</p><h3 className="text-3xl font-mono font-black text-white">$ {totalIncome.toLocaleString()}</h3></div>
-                      <div className="bg-[#111] p-6 rounded-2xl border border-white/10"><p className="text-[10px] text-gray-500 font-bold mb-1">Gastos</p><h3 className="text-3xl font-mono font-black text-red-500">$ {totalExpensesCalc.toLocaleString()}</h3></div>
-                      <div className="bg-[#111] p-6 rounded-2xl border border-white/10"><p className="text-[10px] text-gray-500 font-bold mb-1">Proveedores</p><h3 className="text-3xl font-mono font-black text-vlyck-cyan">{suppliers.length}</h3></div>
+                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6">
+                      <div className="bg-[#111] p-5 md:p-6 rounded-2xl border border-white/10 relative overflow-hidden">
+                          <p className="text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-widest">Utilidad Neta</p>
+                          <h3 className={`text-2xl md:text-3xl font-mono font-black ${profit >= 0 ? 'text-vlyck-lime' : 'text-red-500'}`}>$ {profit.toLocaleString()}</h3>
+                          <span className="material-symbols-outlined absolute top-4 right-4 text-4xl opacity-10">account_balance_wallet</span>
+                      </div>
+                      <div className="bg-[#111] p-5 md:p-6 rounded-2xl border border-white/10 relative overflow-hidden">
+                          <p className="text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-widest">Ingresos Totales</p>
+                          <h3 className="text-2xl md:text-3xl font-mono font-black text-white">$ {totalIncome.toLocaleString()}</h3>
+                          <span className="material-symbols-outlined absolute top-4 right-4 text-4xl opacity-10 text-green-500">trending_up</span>
+                      </div>
+                      <div className="bg-[#111] p-5 md:p-6 rounded-2xl border border-white/10 relative overflow-hidden">
+                          <p className="text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-widest">Gastos Totales</p>
+                          <h3 className="text-2xl md:text-3xl font-mono font-black text-red-500">$ {totalExpensesCalc.toLocaleString()}</h3>
+                          <span className="material-symbols-outlined absolute top-4 right-4 text-4xl opacity-10 text-red-500">trending_down</span>
+                      </div>
+                      <div className="bg-[#111] p-5 md:p-6 rounded-2xl border border-white/10 relative overflow-hidden">
+                          <p className="text-[10px] text-gray-500 font-bold mb-1 uppercase tracking-widest">Proveedores</p>
+                          <h3 className="text-2xl md:text-3xl font-mono font-black text-vlyck-cyan">{suppliers.length}</h3>
+                          <span className="material-symbols-outlined absolute top-4 right-4 text-4xl opacity-10 text-cyan-500">store</span>
+                      </div>
                    </div>
                    
                    {/* Filtros */}
-                   <div className="flex flex-wrap gap-4 mb-6">
-                        <select className="bg-[#151515] border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-300 outline-none" value={dateFilter.month} onChange={e => setDateFilter({...dateFilter, month: e.target.value})}>
+                   <div className="flex flex-col md:flex-row gap-4 bg-[#111] p-4 rounded-xl border border-white/10">
+                        <select className="bg-[#050505] border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-300 outline-none" value={dateFilter.month} onChange={e => setDateFilter({...dateFilter, month: e.target.value})}>
                             {Array.from({length: 12}, (_, i) => i + 1).map(m => <option key={m} value={m}>Mes {m}</option>)}
                         </select>
-                        
-                        <select className="bg-[#151515] border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-300 outline-none" value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
+                        <select className="bg-[#050505] border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-300 outline-none" value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
                             <option value="Todos">Todos los Movimientos</option>
                             <option value="Ingresos">Solo Ingresos (Ventas)</option>
                             <option value="Gastos">Solo Gastos</option>
                         </select>
-
-                        <select className="bg-[#151515] border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-300 outline-none" value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
+                        <select className="bg-[#050505] border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-300 outline-none" value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
                             <option value="Todas">Todas las Categorías</option>
                             <option>Insumos</option><option>Publicidad</option><option>Envíos</option><option>Otros</option><option>Venta</option>
                         </select>
                    </div>
                    
                    <TransactionsTable 
-                        transactions={filteredTransactions} 
-                        onDeleteExpense={handleDeleteExpense} 
-                        onDeleteOrder={handleDeleteOrder} 
-                        onEdit={openEditExpense} 
+                       transactions={filteredTransactions} 
+                       onDeleteExpense={handleDeleteExpense} 
+                       onDeleteOrder={handleDeleteOrder} 
+                       onEdit={openEditExpense} 
                    />
                </div>
            )}
@@ -302,10 +315,10 @@ export default function FinancePage() {
            {activeTab === 'transactions' && (
                <div className="animate-fade-in">
                    <TransactionsTable 
-                        transactions={filteredTransactions} 
-                        onDeleteExpense={handleDeleteExpense} 
-                        onDeleteOrder={handleDeleteOrder} 
-                        onEdit={openEditExpense} 
+                       transactions={filteredTransactions} 
+                       onDeleteExpense={handleDeleteExpense} 
+                       onDeleteOrder={handleDeleteOrder} 
+                       onEdit={openEditExpense} 
                    />
                </div>
            )}
@@ -314,17 +327,17 @@ export default function FinancePage() {
            {activeTab === 'suppliers' && (
                <div className="animate-fade-in">
                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {suppliers.map(sup => (
-                            <div key={sup._id} className="bg-[#111] p-5 rounded-xl border border-white/10 hover:border-vlyck-cyan/50 transition-colors group relative">
-                                <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button onClick={() => openEditSupplier(sup)} className="p-1.5 bg-white/10 rounded text-white"><span className="material-symbols-outlined text-sm">edit</span></button>
-                                    <button onClick={() => handleDeleteSupplier(sup._id)} className="p-1.5 bg-red-500/10 rounded text-red-500"><span className="material-symbols-outlined text-sm">delete</span></button>
-                                </div>
-                                <h3 className="font-bold text-lg text-white">{sup.name}</h3>
-                                <p className="text-sm text-gray-500 mb-4">{sup.contactName}</p>
-                                <span className="px-2 py-1 bg-white/5 rounded text-[10px] text-gray-400 uppercase">{sup.category}</span>
-                            </div>
-                        ))}
+                       {suppliers.map(sup => (
+                           <div key={sup._id} className="bg-[#111] p-5 rounded-xl border border-white/10 hover:border-vlyck-cyan/50 transition-colors group relative">
+                               <div className="absolute top-4 right-4 flex gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                                   <button onClick={() => openEditSupplier(sup)} className="p-1.5 bg-white/10 rounded text-white"><span className="material-symbols-outlined text-sm">edit</span></button>
+                                   <button onClick={() => handleDeleteSupplier(sup._id)} className="p-1.5 bg-red-500/10 rounded text-red-500"><span className="material-symbols-outlined text-sm">delete</span></button>
+                               </div>
+                               <h3 className="font-bold text-lg text-white">{sup.name}</h3>
+                               <p className="text-sm text-gray-500 mb-4">{sup.contactName}</p>
+                               <span className="px-2 py-1 bg-white/5 rounded text-[10px] text-gray-400 uppercase">{sup.category}</span>
+                           </div>
+                       ))}
                    </div>
                </div>
            )}
@@ -334,49 +347,51 @@ export default function FinancePage() {
       {/* --- MODALES --- */}
       {showExpenseModal && (
          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="w-full max-w-2xl bg-[#111] rounded-3xl border border-white/20 p-8 shadow-2xl relative animate-fade-in max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div className="w-full max-w-2xl bg-[#111] rounded-3xl border border-white/20 p-6 md:p-8 shadow-2xl relative animate-fade-in max-h-[90vh] overflow-y-auto custom-scrollbar">
                <div className="flex justify-between items-start mb-6">
                   <h2 className="text-2xl font-mono font-bold text-white">{editingExpenseId ? 'Editar Gasto' : 'Nuevo Gasto'}</h2>
                   <button onClick={() => setShowExpenseModal(false)} className="p-2 rounded-full hover:bg-white/10 text-gray-400"><span className="material-symbols-outlined">close</span></button>
                </div>
 
-               <form onSubmit={submitExpense} className="grid grid-cols-2 gap-6">
-                  <div className="col-span-2"><input required value={expenseForm.description} onChange={e => setExpenseForm({...expenseForm, description: e.target.value})} className="w-full bg-[#050505] border border-white/10 rounded-xl p-3 text-white" placeholder="Descripción"/></div>
-                  <div><input required type="number" value={expenseForm.amount} onChange={e => setExpenseForm({...expenseForm, amount: e.target.value})} className="w-full bg-[#050505] border border-white/10 rounded-xl p-3 text-white" placeholder="Monto"/></div>
+               <form onSubmit={submitExpense} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="md:col-span-2"><label className="text-xs text-gray-500 font-bold mb-1 block">Descripción</label><input required value={expenseForm.description} onChange={e => setExpenseForm({...expenseForm, description: e.target.value})} className="w-full bg-[#050505] border border-white/10 rounded-xl p-3 text-white focus:border-vlyck-lime outline-none transition-colors" placeholder="Ej: Compra de carcasas"/></div>
+                  <div><label className="text-xs text-gray-500 font-bold mb-1 block">Monto</label><input required type="number" value={expenseForm.amount} onChange={e => setExpenseForm({...expenseForm, amount: e.target.value})} className="w-full bg-[#050505] border border-white/10 rounded-xl p-3 text-white focus:border-vlyck-lime outline-none transition-colors" placeholder="$"/></div>
                   <div>
-                     <select value={expenseForm.category} onChange={e => setExpenseForm({...expenseForm, category: e.target.value})} className="w-full bg-[#050505] border border-white/10 rounded-xl p-3 text-white">
+                     <label className="text-xs text-gray-500 font-bold mb-1 block">Categoría</label>
+                     <select value={expenseForm.category} onChange={e => setExpenseForm({...expenseForm, category: e.target.value})} className="w-full bg-[#050505] border border-white/10 rounded-xl p-3 text-white focus:border-vlyck-lime outline-none transition-colors">
                         <option>Insumos</option><option>Publicidad</option><option>Envíos</option><option>Otros</option>
                      </select>
                   </div>
-                  <div className="col-span-2">
-                     <select value={expenseForm.supplier} onChange={e => setExpenseForm({...expenseForm, supplier: e.target.value})} className="w-full bg-[#050505] border border-white/10 rounded-xl p-3 text-white">
+                  <div className="md:col-span-2">
+                     <label className="text-xs text-gray-500 font-bold mb-1 block">Proveedor (Opcional)</label>
+                     <select value={expenseForm.supplier} onChange={e => setExpenseForm({...expenseForm, supplier: e.target.value})} className="w-full bg-[#050505] border border-white/10 rounded-xl p-3 text-white focus:border-vlyck-lime outline-none transition-colors">
                            <option value="">Seleccionar Proveedor...</option>
                            {suppliers.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
                      </select>
                   </div>
 
-                  <div className="col-span-2 space-y-3">
+                  <div className="md:col-span-2 space-y-3">
                       <label className="text-xs uppercase font-bold text-gray-500">Comprobantes</label>
-                      <div className="border-2 border-dashed border-white/10 rounded-xl p-4 flex flex-col items-center justify-center hover:bg-white/5 cursor-pointer relative">
+                      <div className="border-2 border-dashed border-white/10 rounded-xl p-4 flex flex-col items-center justify-center hover:bg-white/5 cursor-pointer relative transition-colors">
                           <input type="file" onChange={handleUploadFile} className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*,application/pdf" />
-                          <div className="bg-white/5 p-2 rounded-full mb-2"><span className="material-symbols-outlined text-gray-400">cloud_upload</span></div>
-                          {uploading ? <p className="text-xs text-vlyck-lime animate-pulse">Subiendo...</p> : <p className="text-xs text-gray-500">Click para subir (+)</p>}
+                          <div className="bg-white/5 p-3 rounded-full mb-2 text-vlyck-lime"><span className="material-symbols-outlined">cloud_upload</span></div>
+                          {uploading ? <p className="text-xs text-vlyck-lime animate-pulse">Subiendo...</p> : <p className="text-xs text-gray-500 font-bold">Toca para subir (+)</p>}
                       </div>
                       {expenseForm.attachments.length > 0 && (
                           <div className="flex flex-wrap gap-2">
                               {expenseForm.attachments.map((url, idx) => (
                                   <div key={idx} className="relative w-16 h-16 bg-white/5 rounded-lg border border-white/10 overflow-hidden group">
                                       {url.endsWith('.pdf') ? <div className="flex items-center justify-center h-full text-red-500"><span className="material-symbols-outlined">picture_as_pdf</span></div> : <img src={url} className="w-full h-full object-cover" />}
-                                      <button type="button" onClick={() => removeAttachment(idx)} className="absolute top-0 right-0 bg-red-600 text-white w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100">&times;</button>
+                                      <button type="button" onClick={() => removeAttachment(idx)} className="absolute top-0 right-0 bg-red-600 text-white w-5 h-5 flex items-center justify-center text-xs">&times;</button>
                                   </div>
                               ))}
                           </div>
                       )}
                   </div>
 
-                  <div className="col-span-2 flex justify-end gap-3 mt-4">
-                      <button type="button" onClick={() => setShowExpenseModal(false)} className="px-6 py-3 rounded-xl border border-white/10 text-gray-300">Cancelar</button>
-                      <button type="submit" disabled={uploading} className="px-8 py-3 rounded-xl bg-vlyck-lime text-black font-bold">Guardar</button>
+                  <div className="md:col-span-2 flex justify-end gap-3 mt-4 pt-4 border-t border-white/10">
+                      <button type="button" onClick={() => setShowExpenseModal(false)} className="px-6 py-3 rounded-xl border border-white/10 text-gray-300 font-bold hover:bg-white/5">Cancelar</button>
+                      <button type="submit" disabled={uploading} className="px-8 py-3 rounded-xl bg-vlyck-lime text-black font-black hover:scale-105 transition-transform shadow-lg shadow-vlyck-lime/20">Guardar</button>
                   </div>
                </form>
             </div>
@@ -389,9 +404,10 @@ export default function FinancePage() {
                 <h2 className="text-2xl font-mono font-bold text-white mb-6">Nuevo Proveedor</h2>
                 <button onClick={() => setShowSupplierModal(false)} className="absolute top-4 right-4 text-gray-400"><span className="material-symbols-outlined">close</span></button>
                 <form onSubmit={submitSupplier} className="flex flex-col gap-4">
-                    <input required value={supplierForm.name} onChange={e => setSupplierForm({...supplierForm, name: e.target.value})} className="w-full bg-[#050505] border border-white/10 rounded-xl p-3 text-white" placeholder="Nombre"/>
+                    <input required value={supplierForm.name} onChange={e => setSupplierForm({...supplierForm, name: e.target.value})} className="w-full bg-[#050505] border border-white/10 rounded-xl p-3 text-white" placeholder="Nombre Empresa"/>
                     <input value={supplierForm.rut} onChange={e => setSupplierForm({...supplierForm, rut: e.target.value})} className="w-full bg-[#050505] border border-white/10 rounded-xl p-3 text-white" placeholder="RUT"/>
-                    <button type="submit" className="mt-4 px-8 py-3 rounded-xl bg-vlyck-cyan text-black font-bold">Guardar</button>
+                    <input value={supplierForm.contactName} onChange={e => setSupplierForm({...supplierForm, contactName: e.target.value})} className="w-full bg-[#050505] border border-white/10 rounded-xl p-3 text-white" placeholder="Contacto (Nombre)"/>
+                    <button type="submit" className="mt-4 px-8 py-3 rounded-xl bg-vlyck-cyan text-black font-bold hover:brightness-110 transition-all">Guardar</button>
                 </form>
             </div>
         </div>
@@ -400,92 +416,131 @@ export default function FinancePage() {
   );
 }
 
-// --- TABLA UNIFICADA (VISOR DE ARCHIVOS CORREGIDO) ---
+// --- TABLA UNIFICADA (RESPONSIVE: CARDS EN MÓVIL, TABLA EN PC) ---
 function TransactionsTable({ transactions, onDeleteExpense, onDeleteOrder, onEdit }) {
-    return (
-        <div className="bg-[#111] rounded-2xl border border-white/10 overflow-hidden">
-            <table className="w-full text-left border-collapse">
-                 <thead className="bg-white/5 text-[10px] uppercase tracking-widest text-gray-500 border-b border-white/5">
-                    <tr>
-                       <th className="p-4">Fecha</th>
-                       <th className="p-4">Tipo</th>
-                       <th className="p-4">Descripción / Productos</th>
-                       <th className="p-4">Categoría</th>
-                       <th className="p-4 text-center">Comprobante</th>
-                       <th className="p-4 text-right">Monto</th>
-                       <th className="p-4 text-right">Acciones</th>
-                    </tr>
-                 </thead>
-                 <tbody className="divide-y divide-white/5 text-sm">
-                    {transactions.map(trx => (
-                       <tr key={trx._id} className="group hover:bg-white/5 transition-colors">
-                          <td className="p-4 text-gray-400 font-mono">{new Date(trx.date).toLocaleDateString()}</td>
-                          <td className="p-4">
-                             <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${trx.type === 'Ingreso' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
-                                {trx.type}
-                             </span>
-                          </td>
-                          <td className="p-4 text-white">
-                             <div className="font-bold">{trx.colDescription}</div>
-                             <div className="text-xs text-gray-500 truncate max-w-[200px]" title={trx.colSupplierOrItems}>{trx.colSupplierOrItems}</div>
-                          </td>
-                          <td className="p-4">
-                             <span className="px-2 py-1 rounded-md bg-white/5 border border-white/10 text-[10px] font-bold text-gray-300 uppercase">
-                                {trx.category}
-                             </span>
-                          </td>
-                          
-                          {/* ✅ COLUMNA ARCHIVOS CORREGIDA */}
-                          <td className="p-4 text-center">
-                             {trx.type === 'Ingreso' ? (
-                                // BOLETA DE VENTA
-                                <Link to={trx.internalLink} target="_blank" className="flex items-center justify-center gap-1 text-vlyck-cyan hover:text-white transition-colors" title="Ver Boleta">
-                                    <span className="material-symbols-outlined text-xl">receipt_long</span>
-                                </Link>
-                             ) : (
-                                // ARCHIVOS DE GASTO (Lógica robusta)
-                                (trx.attachments?.length > 0 || trx.invoiceUrl) ? (
-                                    <div className="flex justify-center -space-x-2">
-                                        {/* 1. Mostrar Attachments Nuevos */}
-                                        {trx.attachments && trx.attachments.map((url, i) => (
-                                            <a key={i} href={url} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-[#222] border border-white/10 flex items-center justify-center hover:scale-110 transition-transform hover:z-10 hover:border-vlyck-lime">
-                                                {url.endsWith('.pdf') ? <span className="material-symbols-outlined text-[10px] text-red-500">picture_as_pdf</span> : <span className="material-symbols-outlined text-[10px] text-vlyck-lime">image</span>}
-                                            </a>
-                                        ))}
-                                        {/* 2. Mostrar InvoiceUrl Vieja (Si existe y no está en attachments) */}
-                                        {trx.invoiceUrl && (!trx.attachments || !trx.attachments.includes(trx.invoiceUrl)) && (
-                                            <a href={trx.invoiceUrl} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-[#222] border border-white/10 flex items-center justify-center hover:scale-110 transition-transform hover:z-10 hover:border-vlyck-lime">
-                                                <span className="material-symbols-outlined text-[10px] text-blue-400">description</span>
-                                            </a>
-                                        )}
-                                    </div>
-                                ) : <span className="text-gray-700 text-xs">-</span>
-                             )}
-                          </td>
+    if (transactions.length === 0) {
+        return <div className="text-center py-20 text-gray-500 border border-dashed border-white/10 rounded-2xl bg-[#111]">No hay movimientos en este periodo.</div>;
+    }
 
-                          <td className="p-4 text-right">
-                             <span className={`font-mono font-bold ${trx.type === 'Ingreso' ? 'text-vlyck-lime' : 'text-red-400'}`}>
-                                {trx.type === 'Ingreso' ? '+' : ''} ${trx.amount.toLocaleString()}
-                             </span>
-                          </td>
-                          
-                          <td className="p-4 text-right flex justify-end gap-2">
-                             {trx.type === 'Gasto' ? (
-                                <>
-                                    <button onClick={() => onEdit(trx)} className="p-1.5 hover:bg-white/10 rounded text-gray-400 hover:text-white"><span className="material-symbols-outlined text-sm">edit</span></button>
-                                    <button onClick={() => onDeleteExpense(trx._id)} className="p-1.5 hover:bg-red-500/10 rounded text-gray-400 hover:text-red-500"><span className="material-symbols-outlined text-sm">delete</span></button>
-                                </>
-                             ) : (
-                                // SOLO BORRAR ORDENES (Revertir Stock)
-                                <button onClick={() => onDeleteOrder(trx._id)} className="p-1.5 hover:bg-red-500/10 rounded text-gray-400 hover:text-red-500" title="Eliminar Venta y Revertir Stock">
-                                    <span className="material-symbols-outlined text-sm">delete_forever</span>
-                                </button>
-                             )}
-                          </td>
-                       </tr>
-                    ))}
-                 </tbody>
-            </table>
-        </div>
+    return (
+        <>
+            {/* VISTA MÓVIL: TARJETAS */}
+            <div className="md:hidden space-y-4">
+                {transactions.map(trx => (
+                    <div key={trx._id} className="bg-[#111] p-4 rounded-xl border border-white/10 flex items-center justify-between shadow-lg">
+                        <div className="flex items-center gap-4">
+                            {/* Icono de Tipo */}
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${trx.type === 'Ingreso' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                                <span className="material-symbols-outlined">{trx.type === 'Ingreso' ? 'arrow_upward' : 'arrow_downward'}</span>
+                            </div>
+                            
+                            {/* Info Principal */}
+                            <div>
+                                <h4 className="font-bold text-white text-sm line-clamp-1">{trx.colDescription}</h4>
+                                <p className="text-xs text-gray-500">{new Date(trx.date).toLocaleDateString()}</p>
+                            </div>
+                        </div>
+
+                        {/* Monto y Menú */}
+                        <div className="text-right">
+                            <p className={`font-mono font-black ${trx.type === 'Ingreso' ? 'text-vlyck-lime' : 'text-white'}`}>
+                                {trx.type === 'Ingreso' ? '+' : '-'}${Math.abs(trx.amount).toLocaleString()}
+                            </p>
+                            <div className="flex justify-end gap-2 mt-2">
+                                {trx.type === 'Gasto' ? (
+                                    <>
+                                        <button onClick={() => onEdit(trx)} className="text-gray-400 hover:text-white"><span className="material-symbols-outlined text-lg">edit</span></button>
+                                        <button onClick={() => onDeleteExpense(trx._id)} className="text-red-500/50 hover:text-red-500"><span className="material-symbols-outlined text-lg">delete</span></button>
+                                    </>
+                                ) : (
+                                    <button onClick={() => onDeleteOrder(trx._id)} className="text-red-500/50 hover:text-red-500"><span className="material-symbols-outlined text-lg">delete_forever</span></button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {/* VISTA PC: TABLA */}
+            <div className="hidden md:block bg-[#111] rounded-2xl border border-white/10 overflow-hidden shadow-xl">
+                <table className="w-full text-left border-collapse">
+                     <thead className="bg-white/5 text-[10px] uppercase tracking-widest text-gray-500 border-b border-white/5">
+                        <tr>
+                           <th className="p-4">Fecha</th>
+                           <th className="p-4">Tipo</th>
+                           <th className="p-4">Descripción / Productos</th>
+                           <th className="p-4">Categoría</th>
+                           <th className="p-4 text-center">Comprobante</th>
+                           <th className="p-4 text-right">Monto</th>
+                           <th className="p-4 text-right">Acciones</th>
+                        </tr>
+                     </thead>
+                     <tbody className="divide-y divide-white/5 text-sm">
+                        {transactions.map(trx => (
+                           <tr key={trx._id} className="group hover:bg-white/5 transition-colors">
+                              <td className="p-4 text-gray-400 font-mono">{new Date(trx.date).toLocaleDateString()}</td>
+                              <td className="p-4">
+                                 <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase ${trx.type === 'Ingreso' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
+                                    {trx.type}
+                                 </span>
+                              </td>
+                              <td className="p-4 text-white">
+                                 <div className="font-bold">{trx.colDescription}</div>
+                                 <div className="text-xs text-gray-500 truncate max-w-[200px]" title={trx.colSupplierOrItems}>{trx.colSupplierOrItems}</div>
+                              </td>
+                              <td className="p-4">
+                                 <span className="px-2 py-1 rounded-md bg-white/5 border border-white/10 text-[10px] font-bold text-gray-300 uppercase">
+                                    {trx.category}
+                                 </span>
+                              </td>
+                              
+                              <td className="p-4 text-center">
+                                 {trx.type === 'Ingreso' ? (
+                                    <Link to={trx.internalLink} target="_blank" className="flex items-center justify-center gap-1 text-vlyck-cyan hover:text-white transition-colors" title="Ver Boleta">
+                                       <span className="material-symbols-outlined text-xl">receipt_long</span>
+                                    </Link>
+                                 ) : (
+                                    (trx.attachments?.length > 0 || trx.invoiceUrl) ? (
+                                        <div className="flex justify-center -space-x-2">
+                                            {trx.attachments && trx.attachments.map((url, i) => (
+                                                <a key={i} href={url} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-[#222] border border-white/10 flex items-center justify-center hover:scale-110 transition-transform hover:z-10 hover:border-vlyck-lime shadow-lg">
+                                                    {url.endsWith('.pdf') ? <span className="material-symbols-outlined text-[14px] text-red-500">picture_as_pdf</span> : <span className="material-symbols-outlined text-[14px] text-vlyck-lime">image</span>}
+                                                </a>
+                                            ))}
+                                            {/* Retrocompatibilidad con invoiceUrl antiguo */}
+                                            {trx.invoiceUrl && (!trx.attachments || !trx.attachments.includes(trx.invoiceUrl)) && (
+                                                <a href={trx.invoiceUrl} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-[#222] border border-white/10 flex items-center justify-center hover:scale-110 transition-transform hover:z-10 hover:border-vlyck-lime shadow-lg">
+                                                    <span className="material-symbols-outlined text-[14px] text-blue-400">description</span>
+                                                </a>
+                                            )}
+                                        </div>
+                                    ) : <span className="text-gray-700 text-xs">-</span>
+                                 )}
+                              </td>
+
+                              <td className="p-4 text-right">
+                                 <span className={`font-mono font-bold text-base ${trx.type === 'Ingreso' ? 'text-vlyck-lime' : 'text-white'}`}>
+                                    {trx.type === 'Ingreso' ? '+' : '-'}${Math.abs(trx.amount).toLocaleString()}
+                                 </span>
+                              </td>
+                              
+                              <td className="p-4 text-right flex justify-end gap-2">
+                                 {trx.type === 'Gasto' ? (
+                                    <>
+                                        <button onClick={() => onEdit(trx)} className="p-1.5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"><span className="material-symbols-outlined text-sm">edit</span></button>
+                                        <button onClick={() => onDeleteExpense(trx._id)} className="p-1.5 hover:bg-red-500/10 rounded-lg text-gray-400 hover:text-red-500 transition-colors"><span className="material-symbols-outlined text-sm">delete</span></button>
+                                    </>
+                                 ) : (
+                                    <button onClick={() => onDeleteOrder(trx._id)} className="p-1.5 hover:bg-red-500/10 rounded-lg text-gray-400 hover:text-red-500 transition-colors" title="Eliminar Venta y Revertir Stock">
+                                        <span className="material-symbols-outlined text-sm">delete_forever</span>
+                                    </button>
+                                 )}
+                              </td>
+                           </tr>
+                        ))}
+                     </tbody>
+                </table>
+            </div>
+        </>
     );
 }

@@ -1,6 +1,7 @@
 import { MercadoPagoConfig, Preference } from 'mercadopago';
 import asyncHandler from 'express-async-handler';
 
+// Asegúrate de que esta variable esté en Railway con tu Token de Producción (APP_USR-...)
 const client = new MercadoPagoConfig({ 
     accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN 
 });
@@ -20,9 +21,8 @@ const createPreference = asyncHandler(async (req, res) => {
         quantity: Number(item.quantity || item.qty),
     }));
 
-    // --- DETECCIÓN DE ENTORNO ---
-    // Si existe la variable en Railway/Netlify, la usa. Si no, usa localhost.
-    // IMPORTANTE: NO pongas una barra "/" al final de la URL en tu archivo .env
+    // --- LÓGICA DE URL ---
+    // En Railway debes poner la variable FRONTEND_URL = https://vlyck.cl
     const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
 
     try {
@@ -32,17 +32,16 @@ const createPreference = asyncHandler(async (req, res) => {
             body: {
                 items: items,
                 payer: {
-                    // Idealmente esto debería venir de req.user.email si está logueado,
-                    // pero para sandbox este email de prueba fijo está bien.
-                    email: "test_user_19283@testuser.com" 
+                    // Si el usuario está logueado usamos su mail, si no, uno genérico para que MP no reclame
+                    email: req.user ? req.user.email : "cliente@vlyck.cl" 
                 },
                 back_urls: {
                     success: `${frontendUrl}/payment-success`,
                     failure: `${frontendUrl}/cart`,
                     pending: `${frontendUrl}/cart`
                 },
-                auto_return: "approved", // ACTIVADO (Funcionará bien en HTTPS/Producción)
-                binary_mode: true
+                auto_return: "approved",
+                binary_mode: true // Solo acepta pagos aprobados o rechazados
             }
         });
 
@@ -51,7 +50,7 @@ const createPreference = asyncHandler(async (req, res) => {
     } catch (error) {
         console.error("Error Mercado Pago:", error);
         res.status(500);
-        throw new Error('Error al crear la preferencia de pago');
+        throw new Error('Error al crear el pago');
     }
 });
 
