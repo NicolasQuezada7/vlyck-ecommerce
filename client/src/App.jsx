@@ -29,7 +29,7 @@ import PosPage from './pages/admin/PosPage';
 import FinancePage from './pages/admin/FinancePage';
 import CustomManagerPage from './pages/admin/CustomManagerPage';
 import UserListPage from './pages/admin/UserListPage';
-
+import MockupManager from './pages/admin/MockupManager';
 // --- PÁGINAS ADMIN (CARPETA RAÍZ /pages) ---
 import ProductListPage from './pages/ProductListPage';
 import ProductEditPage from './pages/ProductEditPage';
@@ -129,7 +129,7 @@ function App() {
               <Route path="/admin/finance" element={<FinancePage />} />
               <Route path="/admin/custom-orders" element={<CustomManagerPage />} />
               <Route path="/admin/users" element={<UserListPage />} />
-              
+              <Route path="/admin/mockups" element={<MockupManager />} />
               {/* Rutas de Productos (Según tu estructura de carpetas actual) */}
               <Route path="/admin/productlist" element={<ProductListPage />} />
               <Route path="/admin/product/:id/edit" element={<ProductEditPage />} />

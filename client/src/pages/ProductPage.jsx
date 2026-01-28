@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { useCart } from '../context/CartContext';
+import { PHONE_MODELS } from '../constants/phoneModels'; // <--- IMPORTANTE: Asegúrate de crear este archivo
 
 export default function ProductPage() {
   const { slug } = useParams();
@@ -21,11 +22,21 @@ export default function ProductPage() {
   const [toastMessage, setToastMessage] = useState('¡Agregado!');
   const [isAdding, setIsAdding] = useState(false);
 
+  // --- ESTADOS PARA LÁMINAS ---
+  const [isHydrogel, setIsHydrogel] = useState(false);
+  const [selectedBrand, setSelectedBrand] = useState('');
+  const [selectedModel, setSelectedModel] = useState('');
+
   useEffect(() => {
     const fetchProduct = async () => {
       try {
         const { data } = await axios.get(`/api/products/${slug}`);
         setProduct(data);
+
+        // DETECTAR SI ES LÁMINA
+        if (data.category === 'Láminas' || data.name.toLowerCase().includes('hidrogel')) {
+            setIsHydrogel(true);
+        }
 
         let preSelected = null;
         if (data.variants && data.variants.length > 0) {
@@ -63,16 +74,31 @@ export default function ProductPage() {
     if (e) { e.preventDefault(); e.stopPropagation(); }
     if (isAdding) return;
 
-    if (product.variants && product.variants.length > 0 && !selectedVariant) {
+    // Validación normal de variantes
+    if (!isHydrogel && product.variants && product.variants.length > 0 && !selectedVariant) {
         alert("Por favor selecciona un color.");
         return;
     } 
 
+    // Validación ESPECIAL para Láminas
+    if (isHydrogel) {
+        if (!selectedBrand || !selectedModel) {
+            setToastMessage('Selecciona Marca y Modelo');
+            setShowToast(true);
+            setTimeout(() => setShowToast(false), 3000);
+            return;
+        }
+    }
+
     const maxStock = Number(selectedVariant ? selectedVariant.stock : product.countInStock);
     const targetId = String(product._id);
-    const targetColor = selectedVariant ? normalize(selectedVariant.color) : "sin-color";
     
-    const uniqueCartId = selectedVariant ? `${targetId}-${targetColor}` : targetId;
+    // Si es lámina, el "color" técnico será el modelo del celular para diferenciarlo en el carrito
+    const targetColor = isHydrogel 
+        ? normalize(selectedModel) 
+        : (selectedVariant ? normalize(selectedVariant.color) : "sin-color");
+    
+    const uniqueCartId = `${targetId}-${targetColor}`;
 
     const currentQtyInCart = cart.reduce((acc, item) => {
         let itemOriginalId = item.product;
@@ -102,13 +128,15 @@ export default function ProductPage() {
     const itemToAdd = {
         _id: uniqueCartId,       
         product: product._id,    
-        name: product.name,
+        // 🔥 AQUÍ ESTÁ EL TRUCO: Cambiamos el nombre si es lámina
+        name: isHydrogel ? `${product.name} - ${selectedModel}` : product.name,
         image: activeImage,
         price: product.basePrice,
         countInStock: maxStock,
         category: product.category, 
-        brand: product.brand,
-        variantColor: selectedVariant ? selectedVariant.color : null,
+        brand: isHydrogel ? selectedBrand : product.brand,
+        // 🔥 Guardamos el modelo como variante para que se vea en el checkout
+        variantColor: isHydrogel ? selectedModel : (selectedVariant ? selectedVariant.color : null),
         selectedVariant: selectedVariant, 
         quantity: 1, 
         qty: 1
@@ -136,12 +164,12 @@ export default function ProductPage() {
       {/* TOAST FLOTANTE */}
       {showToast && (
         <div className="fixed top-28 left-1/2 transform -translate-x-1/2 z-[100] animate-bounce-in px-4 w-full max-w-sm">
-            <div className={`bg-black/90 border px-6 py-4 rounded-full shadow-[0_0_20px_rgba(167,255,45,0.6)] flex items-center justify-center gap-3 backdrop-blur-xl ${toastMessage.includes('máximo') ? 'border-red-500 shadow-red-500/50' : 'border-[#a7ff2d] shadow-[#a7ff2d]/50'}`}>
-                <span className={`material-symbols-outlined text-2xl ${toastMessage.includes('máximo') ? 'text-red-500' : 'text-[#a7ff2d]'}`}>
-                    {toastMessage.includes('máximo') ? 'error' : 'check_circle'}
+            <div className={`bg-black/90 border px-6 py-4 rounded-full shadow-[0_0_20px_rgba(167,255,45,0.6)] flex items-center justify-center gap-3 backdrop-blur-xl ${toastMessage.includes('máximo') || toastMessage.includes('Selecciona') ? 'border-red-500 shadow-red-500/50' : 'border-[#a7ff2d] shadow-[#a7ff2d]/50'}`}>
+                <span className={`material-symbols-outlined text-2xl ${toastMessage.includes('máximo') || toastMessage.includes('Selecciona') ? 'text-red-500' : 'text-[#a7ff2d]'}`}>
+                    {toastMessage.includes('máximo') || toastMessage.includes('Selecciona') ? 'error' : 'check_circle'}
                 </span>
                 <div>
-                    <p className={`font-black uppercase tracking-widest text-sm ${toastMessage.includes('máximo') ? 'text-red-500' : 'text-[#a7ff2d]'}`}>
+                    <p className={`font-black uppercase tracking-widest text-sm ${toastMessage.includes('máximo') || toastMessage.includes('Selecciona') ? 'text-red-500' : 'text-[#a7ff2d]'}`}>
                         {toastMessage}
                     </p>
                 </div>
@@ -149,8 +177,7 @@ export default function ProductPage() {
         </div>
       )}
 
-      {/* BREADCRUMB (MIGAS DE PAN) */}
-      {/* ✅ CORRECCIÓN 1: Eliminado border-b y ajustado padding/top */}
+      {/* BREADCRUMB */}
       <div className="bg-[#050505] py-4 px-4 md:px-10 sticky top-24 z-10">
         <div className="max-w-7xl mx-auto flex flex-col gap-2">
           <div className="text-xs md:text-sm text-gray-500 flex items-center flex-wrap font-medium">
@@ -168,7 +195,6 @@ export default function ProductPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-start">
           
           {/* COLUMNA IZQUIERDA: GALERÍA */}
-          {/* ✅ CORRECCIÓN 2: 'sticky' cambiado a 'lg:sticky'. EN MÓVIL AHORA ES STATIC Y NO FLOTA */}
           <div className="flex flex-col gap-4 lg:sticky lg:top-36 relative z-0">
             <div className="w-full bg-[#111] rounded-3xl border border-white/10 overflow-hidden shadow-2xl relative group aspect-square flex items-center justify-center">
               <img src={activeImage} alt={product.name} className="w-full h-full object-contain p-6 hover:scale-105 transition-transform duration-500" />
@@ -195,8 +221,57 @@ export default function ProductPage() {
             <h1 className="text-3xl md:text-5xl font-black text-white mb-4 leading-tight uppercase tracking-tight">{product.name}</h1>
             <p className="text-4xl text-vlyck-lime font-mono font-bold mb-6 tracking-tight">${product.basePrice.toLocaleString('es-CL')}</p>
 
-            {/* Selector de Variantes */}
-            {product.variants && product.variants.length > 0 && (
+            {/* --- SELECTORES PARA LÁMINAS (SOLO SI ES HIDROGEL) --- */}
+            {isHydrogel && (
+                <div className="bg-[#111] p-5 rounded-2xl border border-vlyck-lime/20 mb-6 shadow-lg">
+                    <div className="flex items-center gap-2 mb-4">
+                       <span className="material-symbols-outlined text-vlyck-lime">smartphone</span>
+                       <h3 className="font-bold text-xs uppercase tracking-widest text-gray-400">Selecciona tu Modelo</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-2 ml-1">Marca</label>
+                            <div className="relative">
+                                <select 
+                                    className="w-full bg-black border border-white/20 rounded-xl p-3 text-white outline-none focus:border-vlyck-lime font-bold appearance-none cursor-pointer text-sm"
+                                    value={selectedBrand}
+                                    onChange={(e) => {
+                                        setSelectedBrand(e.target.value);
+                                        setSelectedModel('');
+                                    }}
+                                >
+                                    <option value="">Selecciona Marca...</option>
+                                    {Object.keys(PHONE_MODELS).map(brand => (
+                                        <option key={brand} value={brand}>{brand}</option>
+                                    ))}
+                                </select>
+                                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none">expand_more</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-2 ml-1">Modelo</label>
+                            <div className="relative">
+                                <select 
+                                    className="w-full bg-black border border-white/20 rounded-xl p-3 text-white outline-none focus:border-vlyck-lime font-bold appearance-none cursor-pointer text-sm disabled:opacity-50"
+                                    value={selectedModel}
+                                    onChange={(e) => setSelectedModel(e.target.value)}
+                                    disabled={!selectedBrand}
+                                >
+                                    <option value="">{selectedBrand ? 'Selecciona Modelo...' : 'Elige marca primero'}</option>
+                                    {selectedBrand && PHONE_MODELS[selectedBrand]?.map(model => (
+                                        <option key={model} value={model}>{model}</option>
+                                    ))}
+                                </select>
+                                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none">expand_more</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Selector de Variantes (SOLO SI NO ES LÁMINA Y TIENE VARIANTES) */}
+            {!isHydrogel && product.variants && product.variants.length > 0 && (
               <div className="mb-6">
                 <label className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3 block">Color Seleccionado: <span className="text-white">{selectedVariant?.color}</span></label>
                 <div className="flex flex-wrap gap-3">

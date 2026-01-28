@@ -6,7 +6,7 @@ import axios from 'axios'
 
 // Configuración de Axios (Se mantiene aquí, está perfecto)
 axios.defaults.baseURL = 'https://vlyck-ecommerce-production.up.railway.app'; 
-
+//axios.defaults.baseURL = 'http://localhost:5000';
 ReactDOM.createRoot(document.getElementById('root')).render(
   /* YA NO necesitamos <BrowserRouter> ni Providers aquí,
      porque ahora todo eso vive dentro de <App />.

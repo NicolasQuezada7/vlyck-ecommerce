@@ -8,6 +8,7 @@ import orderRoutes from './routes/orderRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js'; // ✅ Importante
 import paymentRoutes from './routes/paymentRoutes.js';
 import expenseRoutes from './routes/expenseRoutes.js'; // ✅ Importante
+import mockupRoutes from './routes/mockupRoutes.js';
 
 dotenv.config();
 connectDB();
@@ -49,7 +50,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/upload', uploadRoutes); // ✅ Ruta de subida (Cloudinary)
 app.use('/api/payment', paymentRoutes);
 app.use('/api/expenses', expenseRoutes); // ✅ Ruta de finanzas
-
+app.use('/api/mockups', mockupRoutes);
 if (orderRoutes) {
   app.use('/api/orders', orderRoutes);
 } else {

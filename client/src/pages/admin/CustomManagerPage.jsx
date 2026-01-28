@@ -209,7 +209,20 @@ export default function CustomManagerPage() {
                             </div>
                             <div className="flex-1 flex flex-col justify-between">
                                 <div className="flex justify-between items-start">
-                                    <div><h3 className="text-sm font-bold text-white leading-tight">{order.guestInfo?.name}</h3><p className="text-[10px] text-gray-400 mt-0.5 uppercase">{order.shippingAddress?.city}</p></div>
+                                    <div>
+                                        <h3 className="text-sm font-bold text-white leading-tight">{order.guestInfo?.name}</h3>
+                                        
+                                        {/* 🔥 AQUI ESTÁ EL CAMBIO SOLICITADO: NOMBRE MODELO NEON 🔥 */}
+                                        <div className="flex flex-wrap gap-1 mt-1 mb-1">
+                                            {order.orderItems.map((item, idx) => (
+                                                <span key={idx} className="text-[10px] font-black text-vlyck-lime uppercase tracking-wide drop-shadow-[0_0_5px_rgba(167,255,45,0.6)]">
+                                                    {item.name.replace('Personalizada - ', '')}
+                                                </span>
+                                            ))}
+                                        </div>
+
+                                        <p className="text-[10px] text-gray-400 uppercase">{order.shippingAddress?.city}</p>
+                                    </div>
                                     <span className={`text-[9px] px-2 py-0.5 rounded font-black uppercase ${order.remainingAmount > 0 ? 'bg-red-500/20 text-red-500' : 'bg-green-500/20 text-green-500'}`}>{order.remainingAmount > 0 ? `$${order.remainingAmount.toLocaleString('es-CL')} Pend.` : 'Pagado'}</span>
                                 </div>
                                 <div className="flex justify-between items-end mt-2">

@@ -15,15 +15,15 @@ export default function PaymentSuccess() {
       processedRef.current = true;
 
       const queryParams = new URLSearchParams(location.search);
-      const status = queryParams.get('status'); // approved
+      const status = queryParams.get('status');
       const paymentId = queryParams.get('payment_id');
-      const orderId = queryParams.get('external_reference'); // <--- EL ID DE LA ORDEN
+      const orderId = queryParams.get('external_reference'); // Recibimos el ID
 
       if (status === 'approved' && orderId) {
         try {
-          const config = { headers: { Authorization: `Bearer ${userInfo?.token}` } };
+          // Si hay usuario, enviamos token. Si es invitado, no pasa nada (el backend debe permitirlo o manejarlo)
+          const config = userInfo ? { headers: { Authorization: `Bearer ${userInfo.token}` } } : {};
           
-          // Llamamos al endpoint de "Pagar Orden" que ya tienes en el backend
           await axios.put(`/api/orders/${orderId}/pay`, {
             id: paymentId,
             status: status,
@@ -31,17 +31,12 @@ export default function PaymentSuccess() {
             email_address: userInfo?.email || 'guest@vlyck.cl'
           }, config);
 
-          // Redirigir al recibo final
-          navigate(`/order/${orderId}`);
-
+          navigate(`/order/${orderId}`); // Al recibo
         } catch (error) {
-          console.error("Error confirmando pago:", error);
-          alert("Error al confirmar el pago en el sistema. Guarda tu comprobante.");
-          // Aún así vamos a la orden para que vea el estado
+          console.error("Error confirmando:", error);
           navigate(`/order/${orderId}`);
         }
       } else {
-        // Si falló o canceló, volver al carrito o home
         navigate('/');
       }
     };
@@ -50,10 +45,8 @@ export default function PaymentSuccess() {
   }, [location, navigate, userInfo]);
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white p-4 text-center">
-      <span className="material-symbols-outlined text-6xl animate-spin text-vlyck-lime mb-6">autorenew</span>
-      <h2 className="text-2xl font-black uppercase tracking-tight mb-2">Confirmando Pago...</h2>
-      <p className="text-gray-400 font-mono text-sm">No cierres esta ventana.</p>
+    <div className="min-h-screen bg-black flex items-center justify-center text-white">
+      <h2 className="text-xl animate-pulse">Confirmando pago...</h2>
     </div>
   );
 }

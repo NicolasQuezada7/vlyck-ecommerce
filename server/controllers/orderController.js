@@ -325,11 +325,15 @@ const payOrderBalance = asyncHandler(async (req, res) => {
 });
 
 // ---------------------------------------------------
-// ⚠️ NUEVA FUNCIÓN: GENERAR PREFERENCIA MERCADO PAGO
+// ⚠️ FUNCIÓN CORREGIDA CON PAYER DE PRUEBA
 // @desc    Create MP Preference for an Order
 // @route   POST /api/orders/:id/create-preference
 // @access  Public/Private
+
+// server/controllers/orderController.js
+
 const createOrderPreference = asyncHandler(async (req, res) => {
+  try {
     const order = await Order.findById(req.params.id);
   
     if (!order) {
@@ -348,41 +352,40 @@ const createOrderPreference = asyncHandler(async (req, res) => {
           unit_price: Number(item.price),
           currency_id: 'CLP',
         })),
-        // Agregar el envío como item si existe
-        ...(order.shippingPrice > 0 && {
-            items: [
-                ...order.orderItems.map((item) => ({
-                    id: item.product.toString(),
-                    title: item.name,
-                    quantity: Number(item.qty),
-                    unit_price: Number(item.price),
-                    currency_id: 'CLP',
-                })),
-                {
-                    id: 'shipping',
-                    title: 'Costo de Envío',
-                    quantity: 1,
-                    unit_price: Number(order.shippingPrice),
-                    currency_id: 'CLP'
-                }
-            ]
-        }),
+        
+        // ✅ PRODUCCIÓN: Usamos los datos reales de la orden (guestInfo)
+        // Si no hay guestInfo, no mandamos nada y dejamos que MP lo pida en su web.
         payer: {
-            email: order.guestInfo?.email || 'test_user_123@testuser.com', // Fallback si no hay email
-            name: order.guestInfo?.name || 'Cliente'
+            email: order.guestInfo?.email, 
+            name: order.guestInfo?.name
         },
+
         back_urls: {
-          // Cambia estas URLs a tu dominio de producción
-          success: `https://vlyck-ecommerce-production.up.railway.app/payment-success`,
-          failure: `https://vlyck-ecommerce-production.up.railway.app/cart`,
-          pending: `https://vlyck-ecommerce-production.up.railway.app/cart`,
+          // Recuerda cambiar esto a tu dominio real de Vlyck en producción
+          success: `https://vlyck.cl/payment-success`, // O la URL de tu deploy
+          failure: `https://vlyck.cl/cart`,
+          pending: `https://vlyck.cl/cart`,
         },
         auto_return: 'approved',
-        external_reference: order._id.toString(), // <--- VITAL PARA SABER QUÉ ORDEN SE PAGÓ
+        external_reference: order._id.toString(),
+        
+        // Puedes quitar binary_mode si quieres revisiones manuales, 
+        // o dejarlo en true para aprobación instantánea o rechazo.
+        binary_mode: true, 
+
+        payment_methods: {
+            excluded_payment_types: [{ id: "ticket" }],
+            installments: 12
+        }
       },
     });
   
     res.json({ preferenceId: result.id });
+
+  } catch (error) {
+    console.log("🔴 ERROR MERCADO PAGO:", JSON.stringify(error, null, 2));
+    res.status(500).json({ message: "Error MP", error: error.message });
+  }
 });
 
 export {
@@ -396,5 +399,5 @@ export {
   deleteOrder,
   updateManualOrder,
   payOrderBalance,
-  createOrderPreference // <--- Exportada
+  createOrderPreference
 };

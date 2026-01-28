@@ -7,15 +7,16 @@ import heroBg from '../assets/hero-bg.jpg';
 import magSafeLocal from '../assets/MagSafe3.png';   
 import magFrameLocal from '../assets/MagFrame.png';
 import personalizadasLocal from '../assets/Personalizadas.png';
-
+import laminas from '../assets/Laminas.png';
+import clearProtect from '../assets/ClearProtect.png';
 // 2. CONSTANTES DE IMÁGENES
 const magSafeBannerImg = magSafeLocal; 
 const magFrameBannerImg = magFrameLocal; 
 
 // Fallbacks para las que no tienes local aún
 const customBannerImg = personalizadasLocal; 
-const clearProtectBannerImg = "https://images.unsplash.com/photo-1592899677977-9c10ca63602d?q=80&w=1200&auto=format&fit=crop"; 
-const laminasBannerImg = "https://images.unsplash.com/photo-1616440347437-b1c73416efc2?q=80&w=1200&auto=format&fit=crop"; 
+const clearProtectBannerImg = clearProtect; 
+const laminasBannerImg = laminas;
 const accesoriosBannerImg = "https://images.unsplash.com/photo-1625246733230-e25f69ce997e?q=80&w=1200&auto=format&fit=crop"; 
 
 // --- COMPONENTE BOTÓN DE SCROLL (REUTILIZABLE) ---

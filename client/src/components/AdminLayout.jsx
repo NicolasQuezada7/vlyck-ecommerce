@@ -88,6 +88,10 @@ export default function AdminLayout() {
             <span className="material-symbols-outlined">brush</span>
             <span className="hidden md:block">Personalizadas</span>
           </Link>
+          <Link to="/admin/mockups" className={linkClass('/admin/mockups')}>
+    <span className="material-symbols-outlined">layers</span>
+    <span className="hidden md:block">Moldes</span>
+</Link>
           <Link to="/admin/users" className={linkClass('/admin/users')}>
              <span className="material-symbols-outlined">group</span>
              <span className="hidden md:block">Clientes</span>

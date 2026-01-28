@@ -29,6 +29,10 @@ export default function FinancePage() {
   const [supplierForm, setSupplierForm] = useState({ name: '', rut: '', contactName: '', category: 'General' });
   const [uploading, setUploading] = useState(false);
 
+  // --- ESTADOS DE UI (TOAST Y CONFIRM) ---
+  const [toast, setToast] = useState({ show: false, msg: '', type: 'success' });
+  const [confirmModal, setConfirmModal] = useState({ show: false, title: '', msg: '', action: null, isLoading: false });
+
   // --- CARGA DE DATOS ---
   useEffect(() => { fetchData(); }, [userInfo]);
 
@@ -44,7 +48,17 @@ export default function FinancePage() {
       setSuppliers(supRes.data);
       setOrders(ordRes.data);
       setLoading(false);
-    } catch (error) { console.error(error); setLoading(false); }
+    } catch (error) { 
+        console.error(error); 
+        setLoading(false); 
+        showToastMsg('Error cargando datos', 'error');
+    }
+  };
+
+  // --- HELPER NOTIFICACIONES ---
+  const showToastMsg = (msg, type = 'success') => {
+    setToast({ show: true, msg, type });
+    setTimeout(() => setToast({ ...toast, show: false }), 3000);
   };
 
   // --- LOGICA ARCHIVOS ---
@@ -59,7 +73,11 @@ export default function FinancePage() {
         const { data } = await axios.post('/api/upload', formData, config);
         setExpenseForm(prev => ({ ...prev, attachments: [...prev.attachments, data] }));
         setUploading(false);
-    } catch (error) { console.error(error); setUploading(false); alert('Error al subir'); }
+    } catch (error) { 
+        console.error(error); 
+        setUploading(false); 
+        showToastMsg('Error al subir imagen', 'error'); 
+    }
   };
 
   const removeAttachment = (indexToRemove) => {
@@ -69,33 +87,78 @@ export default function FinancePage() {
     }));
   };
 
-  // --- HANDLERS (CRUD) ---
-  const handleDeleteExpense = async (id) => {
-      if(!window.confirm('¿Eliminar gasto permanentemente?')) return;
+  // --- HANDLERS (CRUD CON MODAL PERSONALIZADO) ---
+  
+  // 1. GASTOS
+  const promptDeleteExpense = (id) => {
+      setConfirmModal({
+          show: true,
+          title: 'Eliminar Gasto',
+          msg: '¿Estás seguro de eliminar este gasto? Esta acción es irreversible.',
+          action: () => executeDeleteExpense(id)
+      });
+  };
+
+  const executeDeleteExpense = async (id) => {
+      setConfirmModal(prev => ({ ...prev, isLoading: true }));
       try {
           const config = { headers: { Authorization: `Bearer ${userInfo.token}` } };
           await axios.delete(`/api/expenses/${id}`, config);
           fetchData();
-      } catch (error) { alert('Error al eliminar gasto'); }
+          showToastMsg('Gasto eliminado correctamente');
+          setConfirmModal({ show: false, title: '', msg: '', action: null, isLoading: false });
+      } catch (error) { 
+          showToastMsg('Error al eliminar gasto', 'error');
+          setConfirmModal(prev => ({ ...prev, isLoading: false }));
+      }
   };
 
-  const handleDeleteOrder = async (id) => {
-      if(!window.confirm('⚠️ ¿Estás seguro? Se eliminará la venta y se RESTAURARÁ el stock.')) return;
+  // 2. ORDENES (VENTAS)
+  const promptDeleteOrder = (id) => {
+      setConfirmModal({
+          show: true,
+          title: 'Eliminar Venta',
+          msg: '⚠️ ALERTA: Esto eliminará el registro de venta y RESTAURARÁ el stock de los productos. ¿Continuar?',
+          action: () => executeDeleteOrder(id)
+      });
+  };
+
+  const executeDeleteOrder = async (id) => {
+      setConfirmModal(prev => ({ ...prev, isLoading: true }));
       try {
           const config = { headers: { Authorization: `Bearer ${userInfo.token}` } };
           await axios.delete(`/api/orders/${id}`, config);
-          alert('Venta eliminada y stock restaurado.');
           fetchData();
-      } catch (error) { alert('Error al eliminar orden'); }
+          showToastMsg('Venta eliminada y stock restaurado');
+          setConfirmModal({ show: false, title: '', msg: '', action: null, isLoading: false });
+      } catch (error) { 
+          showToastMsg('Error al eliminar orden', 'error'); 
+          setConfirmModal(prev => ({ ...prev, isLoading: false }));
+      }
   };
 
-  const handleDeleteSupplier = async (id) => {
-      if(!window.confirm('¿Eliminar proveedor?')) return;
+  // 3. PROVEEDORES
+  const promptDeleteSupplier = (id) => {
+      setConfirmModal({
+          show: true,
+          title: 'Eliminar Proveedor',
+          msg: '¿Eliminar este proveedor de la base de datos?',
+          action: () => executeDeleteSupplier(id)
+      });
+  };
+
+  const executeDeleteSupplier = async (id) => {
+      setConfirmModal(prev => ({ ...prev, isLoading: true }));
       try {
           const config = { headers: { Authorization: `Bearer ${userInfo.token}` } };
           await axios.delete(`/api/expenses/suppliers/${id}`, config);
           fetchData();
-      } catch (error) { alert('Error al eliminar proveedor'); }
+          showToastMsg('Proveedor eliminado');
+          setConfirmModal({ show: false, title: '', msg: '', action: null, isLoading: false });
+      } catch (error) { 
+          showToastMsg('Error al eliminar proveedor', 'error');
+          setConfirmModal(prev => ({ ...prev, isLoading: false }));
+      }
   };
 
   const openEditExpense = (exp) => {
@@ -129,16 +192,16 @@ export default function FinancePage() {
 
         if (editingExpenseId) {
             await axios.put(`/api/expenses/${editingExpenseId}`, payload, config);
-            alert('Gasto actualizado');
+            showToastMsg('Gasto actualizado');
         } else {
             await axios.post('/api/expenses', payload, config);
-            alert('Gasto registrado');
+            showToastMsg('Gasto registrado');
         }
         setShowExpenseModal(false);
         setEditingExpenseId(null);
         setExpenseForm({ description: '', amount: '', category: 'Insumos', supplier: '', attachments: [] });
         fetchData(); 
-    } catch (error) { alert('Error al guardar'); }
+    } catch (error) { showToastMsg('Error al guardar gasto', 'error'); }
   };
 
   const submitSupplier = async (e) => {
@@ -147,14 +210,16 @@ export default function FinancePage() {
         const config = { headers: { Authorization: `Bearer ${userInfo.token}` } };
         if (editingSupplierId) {
             await axios.put(`/api/expenses/suppliers/${editingSupplierId}`, supplierForm, config);
+            showToastMsg('Proveedor actualizado');
         } else {
             await axios.post('/api/expenses/suppliers', supplierForm, config);
+            showToastMsg('Proveedor creado');
         }
         setShowSupplierModal(false);
         setEditingSupplierId(null);
         setSupplierForm({ name: '', rut: '', contactName: '', category: 'General' });
         fetchData(); 
-    } catch (error) { alert('Error al guardar proveedor'); }
+    } catch (error) { showToastMsg('Error al guardar proveedor', 'error'); }
   };
 
   // --- CÁLCULOS Y FUSIÓN DE DATOS ---
@@ -304,8 +369,8 @@ export default function FinancePage() {
                    
                    <TransactionsTable 
                        transactions={filteredTransactions} 
-                       onDeleteExpense={handleDeleteExpense} 
-                       onDeleteOrder={handleDeleteOrder} 
+                       onDeleteExpense={promptDeleteExpense} 
+                       onDeleteOrder={promptDeleteOrder} 
                        onEdit={openEditExpense} 
                    />
                </div>
@@ -316,8 +381,8 @@ export default function FinancePage() {
                <div className="animate-fade-in">
                    <TransactionsTable 
                        transactions={filteredTransactions} 
-                       onDeleteExpense={handleDeleteExpense} 
-                       onDeleteOrder={handleDeleteOrder} 
+                       onDeleteExpense={promptDeleteExpense} 
+                       onDeleteOrder={promptDeleteOrder} 
                        onEdit={openEditExpense} 
                    />
                </div>
@@ -331,7 +396,7 @@ export default function FinancePage() {
                            <div key={sup._id} className="bg-[#111] p-5 rounded-xl border border-white/10 hover:border-vlyck-cyan/50 transition-colors group relative">
                                <div className="absolute top-4 right-4 flex gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
                                    <button onClick={() => openEditSupplier(sup)} className="p-1.5 bg-white/10 rounded text-white"><span className="material-symbols-outlined text-sm">edit</span></button>
-                                   <button onClick={() => handleDeleteSupplier(sup._id)} className="p-1.5 bg-red-500/10 rounded text-red-500"><span className="material-symbols-outlined text-sm">delete</span></button>
+                                   <button onClick={() => promptDeleteSupplier(sup._id)} className="p-1.5 bg-red-500/10 rounded text-red-500"><span className="material-symbols-outlined text-sm">delete</span></button>
                                </div>
                                <h3 className="font-bold text-lg text-white">{sup.name}</h3>
                                <p className="text-sm text-gray-500 mb-4">{sup.contactName}</p>
@@ -344,7 +409,7 @@ export default function FinancePage() {
         </div>
       </main>
 
-      {/* --- MODALES --- */}
+      {/* --- MODALES FORMULARIOS --- */}
       {showExpenseModal && (
          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="w-full max-w-2xl bg-[#111] rounded-3xl border border-white/20 p-6 md:p-8 shadow-2xl relative animate-fade-in max-h-[90vh] overflow-y-auto custom-scrollbar">
@@ -357,17 +422,17 @@ export default function FinancePage() {
                   <div className="md:col-span-2"><label className="text-xs text-gray-500 font-bold mb-1 block">Descripción</label><input required value={expenseForm.description} onChange={e => setExpenseForm({...expenseForm, description: e.target.value})} className="w-full bg-[#050505] border border-white/10 rounded-xl p-3 text-white focus:border-vlyck-lime outline-none transition-colors" placeholder="Ej: Compra de carcasas"/></div>
                   <div><label className="text-xs text-gray-500 font-bold mb-1 block">Monto</label><input required type="number" value={expenseForm.amount} onChange={e => setExpenseForm({...expenseForm, amount: e.target.value})} className="w-full bg-[#050505] border border-white/10 rounded-xl p-3 text-white focus:border-vlyck-lime outline-none transition-colors" placeholder="$"/></div>
                   <div>
-                     <label className="text-xs text-gray-500 font-bold mb-1 block">Categoría</label>
-                     <select value={expenseForm.category} onChange={e => setExpenseForm({...expenseForm, category: e.target.value})} className="w-full bg-[#050505] border border-white/10 rounded-xl p-3 text-white focus:border-vlyck-lime outline-none transition-colors">
-                        <option>Insumos</option><option>Publicidad</option><option>Envíos</option><option>Otros</option>
-                     </select>
+                      <label className="text-xs text-gray-500 font-bold mb-1 block">Categoría</label>
+                      <select value={expenseForm.category} onChange={e => setExpenseForm({...expenseForm, category: e.target.value})} className="w-full bg-[#050505] border border-white/10 rounded-xl p-3 text-white focus:border-vlyck-lime outline-none transition-colors">
+                         <option>Insumos</option><option>Publicidad</option><option>Envíos</option><option>Otros</option>
+                      </select>
                   </div>
                   <div className="md:col-span-2">
-                     <label className="text-xs text-gray-500 font-bold mb-1 block">Proveedor (Opcional)</label>
-                     <select value={expenseForm.supplier} onChange={e => setExpenseForm({...expenseForm, supplier: e.target.value})} className="w-full bg-[#050505] border border-white/10 rounded-xl p-3 text-white focus:border-vlyck-lime outline-none transition-colors">
+                      <label className="text-xs text-gray-500 font-bold mb-1 block">Proveedor (Opcional)</label>
+                      <select value={expenseForm.supplier} onChange={e => setExpenseForm({...expenseForm, supplier: e.target.value})} className="w-full bg-[#050505] border border-white/10 rounded-xl p-3 text-white focus:border-vlyck-lime outline-none transition-colors">
                            <option value="">Seleccionar Proveedor...</option>
                            {suppliers.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
-                     </select>
+                      </select>
                   </div>
 
                   <div className="md:col-span-2 space-y-3">
@@ -412,6 +477,52 @@ export default function FinancePage() {
             </div>
         </div>
       )}
+
+      {/* --- NUEVO: MODAL DE CONFIRMACIÓN (REEMPLAZA ALERTS) --- */}
+      {confirmModal.show && (
+          <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+              <div className="bg-[#111] border border-red-500/30 rounded-2xl w-full max-w-sm p-6 shadow-2xl animate-bounce-in relative">
+                  <div className="flex flex-col items-center text-center">
+                      <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center mb-4">
+                          <span className="material-symbols-outlined text-red-500 text-2xl">warning</span>
+                      </div>
+                      <h3 className="text-lg font-bold text-white mb-2">{confirmModal.title}</h3>
+                      <p className="text-xs text-gray-400 mb-6 leading-relaxed">
+                          {confirmModal.msg}
+                      </p>
+                      
+                      <div className="flex gap-3 w-full">
+                          <button 
+                              onClick={() => setConfirmModal({ ...confirmModal, show: false })} 
+                              className="flex-1 py-3 rounded-xl border border-white/10 text-gray-300 font-bold hover:bg-white/5 transition-colors text-xs uppercase"
+                          >
+                              Cancelar
+                          </button>
+                          <button 
+                              onClick={confirmModal.action}
+                              disabled={confirmModal.isLoading}
+                              className="flex-1 py-3 rounded-xl bg-red-500 text-white font-bold hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20 text-xs uppercase disabled:opacity-50 flex justify-center items-center gap-2"
+                          >
+                              {confirmModal.isLoading ? (
+                                  <>Procesando <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span></>
+                              ) : 'Confirmar'}
+                          </button>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* --- TOAST NOTIFICATIONS --- */}
+      {toast.show && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] animate-bounce-in">
+            <div className={`px-6 py-3 rounded-full border flex items-center gap-3 backdrop-blur-md shadow-2xl ${toast.type === 'error' ? 'bg-red-500/10 border-red-500 text-red-500' : 'bg-vlyck-lime/10 border-vlyck-lime text-vlyck-lime'}`}>
+                <span className="material-symbols-outlined">{toast.type === 'error' ? 'error' : 'check_circle'}</span>
+                <span className="font-bold text-sm uppercase">{toast.msg}</span>
+            </div>
+        </div>
+      )}
+
     </div>
   );
 }
@@ -424,32 +535,38 @@ function TransactionsTable({ transactions, onDeleteExpense, onDeleteOrder, onEdi
 
     return (
         <>
-            {/* VISTA MÓVIL: TARJETAS */}
-            <div className="md:hidden space-y-4">
+            {/* VISTA MÓVIL: TARJETAS ORDENADAS (MODIFICADO) */}
+            <div className="md:hidden space-y-3">
                 {transactions.map(trx => (
-                    <div key={trx._id} className="bg-[#111] p-4 rounded-xl border border-white/10 flex items-center justify-between shadow-lg">
-                        <div className="flex items-center gap-4">
-                            {/* Icono de Tipo */}
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${trx.type === 'Ingreso' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
-                                <span className="material-symbols-outlined">{trx.type === 'Ingreso' ? 'arrow_upward' : 'arrow_downward'}</span>
+                    <div key={trx._id} className="bg-[#111] p-4 rounded-xl border border-white/10 shadow-lg flex items-start gap-4">
+                        
+                        {/* COLUMNA IZQUIERDA: ICONO + DESCRIPCIÓN (EXPANDIBLE) */}
+                        <div className="flex-1 min-w-0 flex gap-3">
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 mt-1 ${trx.type === 'Ingreso' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+                                <span className="material-symbols-outlined text-xl">{trx.type === 'Ingreso' ? 'arrow_upward' : 'arrow_downward'}</span>
                             </div>
-                            
-                            {/* Info Principal */}
-                            <div>
-                                <h4 className="font-bold text-white text-sm line-clamp-1">{trx.colDescription}</h4>
-                                <p className="text-xs text-gray-500">{new Date(trx.date).toLocaleDateString()}</p>
+                            <div className="min-w-0 flex flex-col justify-center">
+                                {/* Nombre completo sin truncate */}
+                                <h4 className="font-bold text-white text-sm leading-tight mb-1">{trx.colDescription}</h4>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                    <span className="text-[10px] text-gray-500">{new Date(trx.date).toLocaleDateString()}</span>
+                                    <span className="text-[9px] text-gray-400 bg-white/5 px-1.5 rounded uppercase">{trx.category}</span>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Monto y Menú */}
-                        <div className="text-right">
-                            <p className={`font-mono font-black ${trx.type === 'Ingreso' ? 'text-vlyck-lime' : 'text-white'}`}>
+                        {/* COLUMNA DERECHA: MONTO + BOTONES (FIJA) */}
+                        <div className="flex flex-col items-end justify-between shrink-0 gap-2">
+                            {/* Monto: whitespace-nowrap evita que se corte */}
+                            <p className={`font-mono font-black text-sm whitespace-nowrap ${trx.type === 'Ingreso' ? 'text-vlyck-lime' : 'text-white'}`}>
                                 {trx.type === 'Ingreso' ? '+' : '-'}${Math.abs(trx.amount).toLocaleString()}
                             </p>
-                            <div className="flex justify-end gap-2 mt-2">
+                            
+                            {/* Acciones compactas */}
+                            <div className="flex gap-2">
                                 {trx.type === 'Gasto' ? (
                                     <>
-                                        <button onClick={() => onEdit(trx)} className="text-gray-400 hover:text-white"><span className="material-symbols-outlined text-lg">edit</span></button>
+                                        <button onClick={() => onEdit(trx)} className="text-gray-500 hover:text-white"><span className="material-symbols-outlined text-lg">edit</span></button>
                                         <button onClick={() => onDeleteExpense(trx._id)} className="text-red-500/50 hover:text-red-500"><span className="material-symbols-outlined text-lg">delete</span></button>
                                     </>
                                 ) : (
@@ -457,11 +574,12 @@ function TransactionsTable({ transactions, onDeleteExpense, onDeleteOrder, onEdi
                                 )}
                             </div>
                         </div>
+
                     </div>
                 ))}
             </div>
 
-            {/* VISTA PC: TABLA */}
+            {/* VISTA PC: TABLA (ORIGINAL) */}
             <div className="hidden md:block bg-[#111] rounded-2xl border border-white/10 overflow-hidden shadow-xl">
                 <table className="w-full text-left border-collapse">
                      <thead className="bg-white/5 text-[10px] uppercase tracking-widest text-gray-500 border-b border-white/5">
@@ -507,7 +625,7 @@ function TransactionsTable({ transactions, onDeleteExpense, onDeleteOrder, onEdi
                                                     {url.endsWith('.pdf') ? <span className="material-symbols-outlined text-[14px] text-red-500">picture_as_pdf</span> : <span className="material-symbols-outlined text-[14px] text-vlyck-lime">image</span>}
                                                 </a>
                                             ))}
-                                            {/* Retrocompatibilidad con invoiceUrl antiguo */}
+                                            {/* Retrocompatibilidad */}
                                             {trx.invoiceUrl && (!trx.attachments || !trx.attachments.includes(trx.invoiceUrl)) && (
                                                 <a href={trx.invoiceUrl} target="_blank" rel="noreferrer" className="w-8 h-8 rounded-full bg-[#222] border border-white/10 flex items-center justify-center hover:scale-110 transition-transform hover:z-10 hover:border-vlyck-lime shadow-lg">
                                                     <span className="material-symbols-outlined text-[14px] text-blue-400">description</span>

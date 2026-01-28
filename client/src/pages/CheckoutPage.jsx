@@ -3,19 +3,26 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { initMercadoPago } from '@mercadopago/sdk-react';
 
 export default function CheckoutPage() {
   const { cart, clearCart } = useCart(); 
   const { userInfo } = useAuth();
   const navigate = useNavigate();
   
-  // --- LÓGICA DE PRECIOS SEGURA (Anti-NaN) ---
+  // Inicializar MP
+  useEffect(() => {
+    if (import.meta.env.VITE_MP_PUBLIC_KEY) {
+        initMercadoPago(import.meta.env.VITE_MP_PUBLIC_KEY, { locale: 'es-CL' });
+    }
+  }, []);
+
+  // --- LÓGICA DE PRECIOS SEGURA ---
   const getPrice = (item) => {
     const val = item.price !== undefined ? item.price : item.basePrice;
     return Number(val) || 0;
   };
 
-  // Calculamos subtotal
   const subtotal = cart.reduce((acc, item) => {
       return acc + (getPrice(item) * (Number(item.quantity) || 0));
   }, 0);
@@ -33,7 +40,8 @@ export default function CheckoutPage() {
     city: userInfo?.shippingAddress?.city || ''
   });
 
-  const [paymentMethod, setPaymentMethod] = useState('MercadoPago'); 
+  // Solo queda webpay como opción única
+  const [paymentMethod, setPaymentMethod] = useState('webpay'); 
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -49,18 +57,36 @@ export default function CheckoutPage() {
     setLoading(true);
 
     try {
-      // 1. Preparar Items (Asegurando números y ID)
-      const orderItems = cart.map(item => ({
-          name: item.name,
-          qty: Number(item.quantity),
-          image: item.image || item.imageUrl || (item.selectedVariant?.images?.[0]) || 'https://placehold.co/300',
-          price: getPrice(item),
-          // Usamos item._id o item.product por seguridad
-          product: item._id || item.product, 
-          variant: item.selectedVariant || {}
-      }));
+      const config = { headers: { 
+          'Content-Type': 'application/json',
+          ...(userInfo && { Authorization: `Bearer ${userInfo.token}` }) 
+      }};
 
-      // 2. Preparar Payload Completo
+      // 1. Preparar Items
+     // 1. Preparar Items (CORREGIDO PARA LIMPIAR ID)
+      const orderItems = cart.map(item => {
+          // A. Detectamos cuál es el ID que tenemos
+          const rawId = item._id || item.product;
+          
+          // B. Si el ID tiene un guion (ej: "12345-negro"), nos quedamos solo con la primera parte
+          const cleanId = rawId.toString().includes('-') 
+              ? rawId.split('-')[0] 
+              : rawId;
+
+          return {
+              name: item.name,
+              qty: Number(item.quantity),
+              image: item.image || item.imageUrl || (item.selectedVariant?.images?.[0]) || 'https://placehold.co/300',
+              price: getPrice(item),
+              
+              // C. Enviamos el ID LIMPIO al backend
+              product: cleanId, 
+              
+              variant: item.selectedVariant || {}
+          };
+      });
+
+      // 2. Crear Datos de la Orden
       const orderData = {
         orderItems,
         shippingAddress: {
@@ -69,36 +95,38 @@ export default function CheckoutPage() {
           region: formData.region,
           country: 'Chile'
         },
-        // ⚠️ CLAVE: Si no hay usuario logueado, mandamos guestInfo
         guestInfo: userInfo ? null : {
             name: `${formData.name} ${formData.lastname}`,
             email: formData.email
         },
-        paymentMethod: paymentMethod,
+        paymentMethod: paymentMethod, 
         itemsPrice: subtotal,
         taxPrice: 0,
         shippingPrice: shippingCost,
         totalPrice: finalTotal,
       };
 
-      const config = { 
-        headers: { 
-            'Content-Type': 'application/json',
-            // Solo mandamos token si existe
-            ...(userInfo && { Authorization: `Bearer ${userInfo.token}` }) 
-        } 
-      };
-
-      const { data } = await axios.post(`/api/orders`, orderData, config);
+      // 3. ENVIAR ORDEN AL BACKEND
+      const { data: createdOrder } = await axios.post(`/api/orders`, orderData, config);
       
-      clearCart();
-      // Redirigimos a la página de éxito donde se paga
-      navigate(`/order/${data._id}`); 
+      // 4. LÓGICA DE REDIRECCIÓN A MERCADO PAGO
+      try {
+          const { data: prefData } = await axios.post(`/api/orders/${createdOrder._id}/create-preference`, {}, config);
+          
+          clearCart();
+          
+          // Redirección directa a la URL de Mercado Pago
+          window.location.href = `https://www.mercadopago.cl/checkout/v1/redirect?pref_id=${prefData.preferenceId}`;
+
+      } catch (mpError) {
+          console.error("Error Mercado Pago:", mpError);
+          alert("Error conectando con el banco. Intenta nuevamente.");
+          setLoading(false);
+      }
       
     } catch (error) {
       console.error("Error checkout:", error);
       alert(`Error: ${error.response?.data?.message || "Hubo un problema al crear la orden"}`);
-    } finally {
       setLoading(false);
     }
   };
@@ -163,15 +191,19 @@ export default function CheckoutPage() {
             </div>
 
             <h2 className="text-2xl font-black text-white mb-6 mt-10 uppercase tracking-tight">Método de Pago</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div onClick={() => setPaymentMethod('MercadoPago')} className={`p-6 rounded-2xl border cursor-pointer transition-all flex flex-col gap-2 relative overflow-hidden group ${paymentMethod === 'MercadoPago' ? 'border-vlyck-lime bg-vlyck-lime/5' : 'border-white/10 bg-[#111] hover:border-white/30'}`}>
+            <div className="grid grid-cols-1 gap-4">
+                {/* 🔴 SOLO OPCIÓN MERCADO PAGO */}
+                <div 
+                    onClick={() => setPaymentMethod('webpay')} 
+                    className="p-6 rounded-2xl border border-vlyck-lime bg-vlyck-lime/5 cursor-pointer transition-all flex flex-col gap-2 relative overflow-hidden group shadow-[0_0_15px_rgba(167,255,45,0.1)]"
+                >
                     <div className="flex justify-between items-center relative z-10">
-                        <span className="font-bold text-white uppercase tracking-wider">Mercado Pago</span>
-                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${paymentMethod === 'MercadoPago' ? 'border-vlyck-lime' : 'border-gray-500'}`}>
-                            {paymentMethod === 'MercadoPago' && <div className="w-3 h-3 bg-vlyck-lime rounded-full"></div>}
+                        <span className="font-black text-white uppercase tracking-wider text-lg">Mercado Pago</span>
+                        <div className="w-6 h-6 rounded-full border border-vlyck-lime flex items-center justify-center">
+                            <div className="w-3 h-3 bg-vlyck-lime rounded-full"></div>
                         </div>
                     </div>
-                    <p className="text-xs text-gray-400 relative z-10">Tarjetas de Crédito, Débito y Transferencia.</p>
+                    <p className="text-xs text-gray-400 relative z-10">Tarjetas de Crédito, Débito (WebPay) y Saldo MP.</p>
                 </div>
             </div>
           </div>
@@ -205,6 +237,7 @@ export default function CheckoutPage() {
                 </div>
              </div>
              
+             {/* BOTÓN FINAL */}
              <button 
                 type="submit" 
                 disabled={loading} 
@@ -213,7 +246,10 @@ export default function CheckoutPage() {
                 {loading ? (
                     <>Procesando <span className="material-symbols-outlined animate-spin">progress_activity</span></>
                 ) : (
-                    <>Confirmar y Pagar <span className="material-symbols-outlined font-bold">arrow_forward</span></>
+                    <>
+                        Ir a Pagar
+                        <span className="material-symbols-outlined font-bold">arrow_forward</span>
+                    </>
                 )}
              </button>
           </aside>

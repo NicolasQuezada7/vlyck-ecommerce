@@ -206,37 +206,54 @@ export default function ProductListPage() {
       {/* --- VISTA MÓVIL (CARDS) --- */}
       <div className="grid grid-cols-1 gap-4 md:hidden mb-8">
         {currentItems.map(product => (
-            <div key={product._id} className="bg-[#111] border border-white/10 rounded-xl p-4 flex gap-4 items-center shadow-lg relative overflow-hidden group">
+            <div key={product._id} className="bg-[#111] border border-white/10 rounded-xl p-4 flex gap-4 items-start shadow-lg relative overflow-hidden group">
+                
+                {/* Imagen */}
                 <div className="w-20 h-20 bg-black rounded-lg shrink-0 border border-white/5 flex items-center justify-center overflow-hidden">
                     <img src={getProductImg(product)} alt={product.name} className="w-full h-full object-cover" onError={(e) => { e.target.src = "https://via.placeholder.com/150?text=Error" }} />
                 </div>
-                <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-start">
-                        <h3 className="text-white font-bold text-sm truncate pr-2">{product.name}</h3>
-                        <span className="text-xs text-vlyck-lime font-mono font-bold">${product.basePrice.toLocaleString('es-CL')}</span>
+                
+                {/* Información Principal */}
+                <div className="flex-1 min-w-0 flex flex-col justify-between h-full">
+                    
+                    {/* Nombre y Categorías */}
+                    <div className="mb-2">
+                        {/* Nombre completo (text-wrap para que baje de línea si es largo) */}
+                        <h3 className="text-white font-bold text-sm leading-tight mb-1.5">{product.name}</h3>
+                        
+                        {/* Badges para Marca y Categoría */}
+                        <div className="flex flex-wrap gap-1.5">
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-vlyck-lime/10 text-vlyck-lime border border-vlyck-lime/20">
+                                {product.brand}
+                            </span>
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-white/5 text-gray-400 border border-white/10">
+                                {product.category}
+                            </span>
+                        </div>
                     </div>
-                    <p className="text-[10px] text-gray-500 uppercase mt-1">{product.brand} • {product.category}</p>
-                    <div className="flex items-center justify-between mt-2">
-                        <p className={`text-[10px] font-bold ${product.countInStock > 0 ? 'text-green-500' : 'text-red-500'}`}>
+
+                    {/* Stock y Fecha */}
+                    <div className="flex items-center gap-3">
+                        <p className={`text-[10px] font-bold px-2 py-0.5 rounded ${product.countInStock > 0 ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}`}>
                             {product.countInStock > 0 ? `Stock: ${product.countInStock}` : 'AGOTADO'}
                         </p>
-                        <span className="text-[9px] text-gray-600 font-mono">{new Date(product.createdAt).toLocaleDateString()}</span>
                     </div>
                 </div>
-                <div className="flex flex-col gap-2 pl-2 border-l border-white/10">
-                    <Link to={`/admin/product/${product._id}/edit`} className="w-8 h-8 rounded-full bg-white/5 text-blue-400 flex items-center justify-center hover:bg-white/10">
-                        <span className="material-symbols-outlined text-sm">edit</span>
+
+                {/* Botones de Acción */}
+                <div className="flex flex-col gap-2 pl-2 border-l border-white/10 justify-center h-full">
+                    <Link to={`/admin/product/${product._id}/edit`} className="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all">
+                        <span className="material-symbols-outlined text-[18px]">edit</span>
                     </Link>
-                    {/* Botón llama al Modal */}
-                    <button onClick={() => openDeleteModal(product._id)} className="w-8 h-8 rounded-full bg-white/5 text-red-500 flex items-center justify-center hover:bg-white/10">
-                        <span className="material-symbols-outlined text-sm">delete</span>
+                    <button onClick={() => openDeleteModal(product._id)} className="w-9 h-9 rounded-xl bg-red-500/10 text-red-500 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all">
+                        <span className="material-symbols-outlined text-[18px]">delete</span>
                     </button>
                 </div>
             </div>
         ))}
       </div>
 
-      {/* --- VISTA DESKTOP (TABLA) --- */}
+      {/* --- VISTA DESKTOP (TABLA) - SIN CAMBIOS --- */}
       <div className="hidden md:block w-full bg-[#111] rounded-2xl border border-white/10 overflow-hidden shadow-xl mb-8">
         <table className="w-full text-left border-collapse">
             <thead className="bg-white/5 text-gray-500 text-[10px] uppercase tracking-widest font-semibold border-b border-white/5">
