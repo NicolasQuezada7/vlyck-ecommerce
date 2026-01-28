@@ -7,7 +7,7 @@ import heroBg from '../assets/hero-bg.jpg';
 import magSafeLocal from '../assets/MagSafe3.png';   
 import magFrameLocal from '../assets/MagFrame.png';
 import personalizadasLocal from '../assets/Personalizadas.png';
-import laminas from '../assets/Laminas.png';
+import laminas from '../assets/laminas.png';
 import clearProtect from '../assets/ClearProtect.png';
 // 2. CONSTANTES DE IMÁGENES
 const magSafeBannerImg = magSafeLocal; 
