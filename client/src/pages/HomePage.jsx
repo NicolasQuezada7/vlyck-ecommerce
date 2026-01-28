@@ -8,7 +8,7 @@ import magSafeLocal from '../assets/MagSafe3.png';
 import magFrameLocal from '../assets/MagFrame.png';
 import personalizadasLocal from '../assets/Personalizadas.png';
 import laminas from '../assets/laminas.png';
-import clearProtect from '../assets/ClearProtect.png';
+import clearProtect from '../assets/clearprotect.png';
 // 2. CONSTANTES DE IMÁGENES
 const magSafeBannerImg = magSafeLocal; 
 const magFrameBannerImg = magFrameLocal; 
