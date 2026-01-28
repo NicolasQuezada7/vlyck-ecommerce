@@ -10,7 +10,8 @@ import {
     addPosOrder,
     deleteOrder,
     updateManualOrder,
-    payOrderBalance 
+    payOrderBalance,
+    createOrderPreference 
 } from '../controllers/orderController.js';
 
 const router = express.Router();
@@ -22,7 +23,7 @@ router.route('/')
 
 // Ruta Mis Ordenes
 router.route('/myorders').get(protect, getMyOrders);
-
+router.route('/:id/create-preference').post(createOrderPreference);
 // Ruta POS
 router.route('/pos').post(protect, admin, addPosOrder);
 

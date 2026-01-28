@@ -1,6 +1,11 @@
 import asyncHandler from 'express-async-handler';
 import Order from '../models/orderModel.js';
 import Product from '../models/productModel.js'; 
+// 1. IMPORTAR MERCADO PAGO
+import { MercadoPagoConfig, Preference } from 'mercadopago';
+
+// 2. CONFIGURAR CLIENTE DE MERCADO PAGO
+const client = new MercadoPagoConfig({ accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN });
 
 // @desc    Create new order (WEB & MANUAL)
 // @route   POST /api/orders
@@ -161,7 +166,7 @@ const updateOrderToPaid = asyncHandler(async (req, res) => {
       id: req.body.id,
       status: req.body.status,
       update_time: req.body.update_time,
-      email_address: req.body.payer?.email_address,
+      email_address: req.body.payer?.email_address || req.body.email_address,
     };
     const updatedOrder = await order.save();
     res.json(updatedOrder);
@@ -241,22 +246,18 @@ const updateManualOrder = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id);
 
   if (order) {
-    // 1. Actualizar Datos Cliente
     order.guestInfo.name = req.body.clientName || order.guestInfo.name;
     order.guestInfo.phone = req.body.phone || order.guestInfo.phone;
     order.guestInfo.instagramUser = req.body.instagramUser || order.guestInfo.instagramUser;
     
-    // 2. Actualizar Dirección
     if (req.body.shippingAddress) {
         order.shippingAddress = req.body.shippingAddress;
     }
 
-    // 3. Actualizar Workflow (Estado) - ✅ CORREGIDO: AHORA SÍ SE GUARDA
     if (req.body.workflowStatus) {
         order.workflowStatus = req.body.workflowStatus;
     }
 
-    // 4. Actualizar Ítems
     if (req.body.orderItems && req.body.orderItems.length > 0) {
         order.orderItems = req.body.orderItems.map(item => ({
             ...item,
@@ -264,21 +265,17 @@ const updateManualOrder = asyncHandler(async (req, res) => {
         }));
     }
 
-    // 5. Actualizar Totales Financieros y Abonos - ✅ CORREGIDO: AHORA ACTUALIZA EL ABONO
     if (req.body.totalPrice !== undefined || req.body.depositAmount !== undefined) {
         if(req.body.itemsPrice !== undefined) order.itemsPrice = req.body.itemsPrice;
         if(req.body.shippingPrice !== undefined) order.shippingPrice = req.body.shippingPrice;
         if(req.body.totalPrice !== undefined) order.totalPrice = req.body.totalPrice;
         
-        // Si viene un abono nuevo, lo actualizamos. Si no, mantenemos el viejo.
         if (req.body.depositAmount !== undefined) {
             order.depositAmount = req.body.depositAmount;
         }
         
-        // Recalcular saldo restante con los datos frescos
         order.remainingAmount = order.totalPrice - order.depositAmount;
         
-        // Ajustar estados de pago
         if (order.remainingAmount <= 0) {
             order.remainingAmount = 0;
             order.isPaid = true;
@@ -327,6 +324,67 @@ const payOrderBalance = asyncHandler(async (req, res) => {
   }
 });
 
+// ---------------------------------------------------
+// ⚠️ NUEVA FUNCIÓN: GENERAR PREFERENCIA MERCADO PAGO
+// @desc    Create MP Preference for an Order
+// @route   POST /api/orders/:id/create-preference
+// @access  Public/Private
+const createOrderPreference = asyncHandler(async (req, res) => {
+    const order = await Order.findById(req.params.id);
+  
+    if (!order) {
+      res.status(404);
+      throw new Error('Orden no encontrada');
+    }
+  
+    const preference = new Preference(client);
+  
+    const result = await preference.create({
+      body: {
+        items: order.orderItems.map((item) => ({
+          id: item.product.toString(),
+          title: item.name,
+          quantity: Number(item.qty),
+          unit_price: Number(item.price),
+          currency_id: 'CLP',
+        })),
+        // Agregar el envío como item si existe
+        ...(order.shippingPrice > 0 && {
+            items: [
+                ...order.orderItems.map((item) => ({
+                    id: item.product.toString(),
+                    title: item.name,
+                    quantity: Number(item.qty),
+                    unit_price: Number(item.price),
+                    currency_id: 'CLP',
+                })),
+                {
+                    id: 'shipping',
+                    title: 'Costo de Envío',
+                    quantity: 1,
+                    unit_price: Number(order.shippingPrice),
+                    currency_id: 'CLP'
+                }
+            ]
+        }),
+        payer: {
+            email: order.guestInfo?.email || 'test_user_123@testuser.com', // Fallback si no hay email
+            name: order.guestInfo?.name || 'Cliente'
+        },
+        back_urls: {
+          // Cambia estas URLs a tu dominio de producción
+          success: `https://vlyck-ecommerce-production.up.railway.app/payment-success`,
+          failure: `https://vlyck-ecommerce-production.up.railway.app/cart`,
+          pending: `https://vlyck-ecommerce-production.up.railway.app/cart`,
+        },
+        auto_return: 'approved',
+        external_reference: order._id.toString(), // <--- VITAL PARA SABER QUÉ ORDEN SE PAGÓ
+      },
+    });
+  
+    res.json({ preferenceId: result.id });
+});
+
 export {
   addOrderItems,
   addPosOrder,
@@ -337,5 +395,6 @@ export {
   getOrders,
   deleteOrder,
   updateManualOrder,
-  payOrderBalance
+  payOrderBalance,
+  createOrderPreference // <--- Exportada
 };

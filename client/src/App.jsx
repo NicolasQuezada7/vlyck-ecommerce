@@ -22,7 +22,7 @@ import PaymentSuccess from './pages/PaymentSuccess';
 import OrderSuccessPage from './pages/OrderSuccessPage';
 import CustomizerPage from './pages/CustomizerPage';
 import AboutPage from './pages/AboutPage';
-
+import CheckoutPage from './pages/CheckoutPage';
 // --- PÁGINAS ADMIN (CARPETA /admin) ---
 import DashboardPage from './pages/admin/DashboardPage';
 import PosPage from './pages/admin/PosPage';
@@ -110,7 +110,7 @@ function App() {
               <Route path="/order/:id" element={<OrderSuccessPage />} />
               <Route path="/customizer" element={<CustomizerPage />} />
               <Route path="/about" element={<AboutPage />} />
-              
+              <Route path="/checkout" element={<CheckoutPage />} />
               {/* Login/Register pueden ir aquí o separados si quieres sin Navbar */}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
